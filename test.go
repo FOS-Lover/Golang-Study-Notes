@@ -2,25 +2,44 @@ package main
 
 import "fmt"
 
+// 参数变长
+func f1(args ...int) {
+	for i, arg := range args {
+		fmt.Println(i, arg)
+	}
+}
+
+// 固定参数和参数变长
+func f2(name string, age int, args ...int) {
+	fmt.Println(name, age, args)
+}
+
+// 验证浅拷贝和深拷贝
+// 浅拷贝会生成副本不会影响原来的实参参数值
+// 深拷贝会拷贝值的指针，会影响双向数据
+// map slice interface channel
+
+// 浅拷贝
+func f3(a int) {
+	a = 100
+	fmt.Println(a) // 100
+}
+
+// 深拷贝
+func f4(a []int) {
+	a[0] = 10000
+	fmt.Println(a) // [10000 2 3]
+}
+
 func main() {
-	// 两种声明和初始化map
-	var mapData = map[string]string{
-		"name": "Noi-q",
-		"age":  "18",
-	}
-	fmt.Println(mapData) // map[age:18 name:Noi-q]
+	f1(1, 2, 3, 4, 5)
+	f2("tom", 20, 123, 12313212, 123123123)
 
-	var mapData2 = make(map[string]string)
-	mapData2["name"] = "Noi-q"
-	mapData2["age"] = "20"
-	fmt.Println(mapData2) // map[age:20 name:Noi-q]
+	test := 10
+	f3(test)
+	fmt.Println(test) // 10
 
-	fmt.Printf("%T %T\n", mapData, mapData2)
-
-	// 判断key是否存在
-	var mapData3 = map[string]string{
-		"name": "Noi-q",
-	}
-	v, ok := mapData3["name"]
-	fmt.Println(mapData3, v, ok) // map[name:Noi-q] Noi-q true
+	test2 := []int{1, 2, 3}
+	f4(test2)
+	fmt.Println(test2) // [10000 2 3]
 }

@@ -743,7 +743,7 @@ func main() {
 	m := make(map[string]string, 0) // map
 	m["name"] = "tom"
 	m["age"] = "20"
-	m["email"] = "noi.vcal@gmail.com"
+	m["email"] = "xxx@gmail.com"
 	for key, value := range m {
 		fmt.Println(key, value)
 	}
@@ -1216,6 +1216,9 @@ func main() {
     - `map_variable` map变量名称
     - `key_data_type` key的数据类型
     - `value_data_type` 值的数据类型
+
+- #### map声明和初始化
+
 ```go
 package main
 
@@ -1224,23 +1227,194 @@ import "fmt"
 func main() {
 	// 两种声明和初始化map
 	var mapData = map[string]string{
-		"name": "Noi-q",
+		"name": "tom",
 		"age":  "18",
 	}
-	fmt.Println(mapData) // map[age:18 name:Noi-q]
+	fmt.Println(mapData) // map[age:18 name:tom]
 
 	var mapData2 = make(map[string]string)
-	mapData2["name"] = "Noi-q"
+	mapData2["name"] = "tom"
 	mapData2["age"] = "20"
-	fmt.Println(mapData2) // map[age:20 name:Noi-q]
+	fmt.Println(mapData2) // map[age:20 name:tom]
 
 	fmt.Printf("%T %T\n", mapData, mapData2)
 
 	// 判断key是否存在
 	var mapData3 = map[string]string{
-		"name": "Noi-q",
+		"name": "tom",
 	}
 	v, ok := mapData3["name"]
-	fmt.Println(mapData3, v, ok) // map[name:Noi-q] Noi-q true
+	fmt.Println(mapData3, v, ok) // map[name:tom] tom true
 }
 ```
+
+- #### 遍历map
+
+```go
+package main
+
+import "fmt"
+
+func main() {
+	var data = map[string]string{
+		"name": "tom",
+		"age":  "22",
+	}
+	for key, value := range data {
+		fmt.Printf("key: %v, value: %v\n", key, value)
+	}
+}
+```
+
+### 函数
+
+- #### Go的函数特性
+  - Go有三种函数:普通函数，匿名函数(沒有名称的函数)，方法(定义在`struct`上的函数)
+  - Go中不允许函数重载(overload), 也就是不允许函数同名
+  - Go中的函数不能嵌套函数，但可以嵌套匿名函数
+  - 函数是一个值，可以将函数赋值给变量，使这个变量也成为函数
+  - 函数可以作为参数传递给另一个函数
+  - 函数的返回值可以是一个函数
+  - 函数调用的时候，如果有参数传递给函数，则先拷贝参数的副本，再将副本传递给函数
+  - 函数参数可以没有名称
+
+- #### 函数的定义
+  - ```go
+    func function_name( [parameter list] ) [return_types]{
+      // 函数体
+    }
+  - `func`  函数由`func`声明
+  - `function_name` 函数名称，函数名和参数列表一起构成了函数签名
+  - `[parameter list]` 参数列表，参数就像一个占位符，当函数被调用时，你可以将值传递给参数，这个值被称为实际函数。参数列表指定的是参数类型，顺序及参数个数。参数是可选的，也就是说函数也可以不包含参数
+  - `return_types` 返回类型，函数返回一列值。`return_types` 是该列值的数据类型。有些功能不需要返回函数值，这种情况下`return_types`不是必须的
+  - 函数体: 函数定义的代码集合
+```go
+package main
+
+import "fmt"
+
+func sum(a int, b int) (ret int) {
+	ret = a + b
+	return ret
+}
+
+func comp(a int, b int) int {
+	if a > b {
+		return a
+	} else {
+		return b
+	}
+}
+
+func main() {
+	r := sum(1, 2)
+	fmt.Println(r) // 3
+	
+	r2 := comp(3, 5)
+	fmt.Println(r2) // 5
+}
+```
+
+- #### 函数的返回值
+
+```go
+package main
+
+import "fmt"
+
+func f1() {
+	fmt.Println("无参数和返回值函数")
+}
+
+func f2(a int, b int) {
+	fmt.Println("有参数无返回值", a, b)
+}
+
+// 有参数有返回值
+func f3(a int, b int) int {
+	return a + b
+}
+
+// 有参数有返回并且有返回值变量
+func f4(a int, b int) (ret int) {
+	ret = a + b
+	return ret
+}
+
+// 无参数有多个返回值
+func f5() (name string, age int) {
+	name = "tom"
+	age = 20
+	//return name, age
+	return
+}
+
+func main() {
+	f1()
+
+	f2(1, 2)
+
+	a := f3(1, 2)
+	fmt.Println(a)
+
+	b := f4(1, 2)
+	fmt.Println(b)
+
+	name, age := f5()
+	fmt.Println(name, age)
+}
+```
+
+- #### 函数的参数
+  - 可以是0个或多个参数，参数需要指定数据类型
+  - 声明函数时的参数列表叫做形参，调用时传递的参数叫做实参
+  - Go是通过传值的方式传参的，意味着传递给函数的是拷贝后的副本，所以函数的内部访问，修改的也是这个副本
+  - Go可以使用变长参数，有时候并不能确定参数的个数，可以使用变长参数，可以在函数定义语句的参数部分使用`ARGS...TYPE`的方式。这时会将`...`代表的参数全部保存到一个名为ARGS的slice中，注意这些参数的数据类型都是TYPE
+```go
+package main
+
+import "fmt"
+
+// 参数变长
+func f1(args ...int) {
+	for i, arg := range args {
+		fmt.Println(i, arg)
+	}
+}
+// 固定参数和参数变长
+func f2(name string, age int, args ...int) {
+	fmt.Println(name, age, args)
+}
+
+// 验证浅拷贝和深拷贝
+// 浅拷贝会生成副本不会影响原来的实参参数值
+// 深拷贝会拷贝值的指针，会影响双向数据
+// map slice interface channel
+
+// 浅拷贝
+func f3(a int) {
+	a = 100
+	fmt.Println(a) // 100
+}
+
+// 深拷贝
+func f4(a []int) {
+	a[0] = 10000
+	fmt.Println(a) // [10000 2 3]
+}
+
+func main() {
+	f1(1, 2, 3, 4, 5)
+	f2("tom", 20, 123, 12313212, 123123123)
+
+	test := 10
+	f3(test)
+	fmt.Println(test) // 10
+
+	test2 := []int{1, 2, 3}
+	f4(test2)
+	fmt.Println(test2) // [10000 2 3]
+}
+```
+
+- #### 函数类型与函数变量
