@@ -1,9 +1,4 @@
-# Noi-q's Golang Study Note
-
-- Date: <span style="color:red;">2022-10-04</span>
-- Author: <span style="color:red;">Noi-q</span>
-- Email: <span style="color:red;">noi.vcal@gmail.com</span>
-- Github: <a href="https://github.com/Noi-q">Noi-q</a>
+# Golang Study Note
 
 ### 常用命令
 
