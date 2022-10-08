@@ -1,5 +1,8 @@
 # Golang Study Note
 
+- 采用 <a href="https://github.com/FOS-Lover/Golang-Study-Notes/blob/master/LICENSE">MIT</a> 协议
+- 更新于 : 2022年10月18日
+
 ### 常用命令
 
 - `go mod init note` # 初始化包
