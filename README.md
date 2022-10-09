@@ -1,7 +1,7 @@
 # Golang Study Note
 
 - 采用 <a href="https://github.com/FOS-Lover/Golang-Study-Notes/blob/master/LICENSE">MIT</a> 协议
-- 更新于 : 2022年10月8日
+- 更新于 : 2022年10月9日
 
 ### 常用命令
 
@@ -1418,3 +1418,131 @@ func main() {
 ```
 
 - #### 函数类型与函数变量
+  - 可以使用`type`关键字来定义一个函数类型
+  - ```go
+    type fun func(int, int) int
+
+```go
+package main
+
+import "fmt"
+
+// 函数类型
+type fun func(int, int) int
+
+func sum(a int, b int) int {
+	return a + b
+}
+
+func max(a int, b int) int {
+	if a > b {
+		return a
+	} else {
+		return b
+	}
+}
+
+func main() {
+	var ff fun
+	
+	ff = sum
+	r := ff(1, 2)
+	fmt.Println(r)
+
+	ff = max
+	r2 := ff(1, 2)
+	fmt.Println(r2)
+}
+```
+
+- #### 高阶函数
+
+1. 函数参数
+
+```go
+package main
+
+import "fmt"
+
+func sayHello(name string) {
+	fmt.Printf("Hello %s", name)
+}
+func test(name string, f func(string)) {
+	f(name)
+}
+
+func main() {
+	test("tom", sayHello)
+}
+```
+
+2. 函数返回值
+
+```go
+package main
+
+import "fmt"
+
+func add(a, b int) int {
+	return a + b
+}
+
+func sub(a, b int) int {
+	return a - b
+}
+
+func cal(s string) func(int, int) int {
+	switch s {
+	case "+":
+		return add
+	case "-":
+		return sub
+	default:
+		return nil
+	}
+}
+
+func main() {
+	a := cal("+")
+	fmt.Println(a(1, 2))
+	
+	s := cal("-")
+	fmt.Println(s(2, 1))
+}
+```
+
+3. 匿名函数
+
+```go
+package main
+
+import "fmt"
+
+func test() {
+	name := "tom"
+	age := "20"
+
+	f := func() string {
+		return name + age
+	}
+	msg := f()
+	fmt.Println(msg)
+}
+
+func main() {
+	// 匿名函数
+	add := func() string {
+		return "Hello World"
+	}
+	a := add()
+	fmt.Println(a)
+
+	// 自调用函数
+	b := func(a int, b int) int {
+		return a + b
+	}(1, 2)
+	fmt.Println(b)
+
+	test()
+}
+```
