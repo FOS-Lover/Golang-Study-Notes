@@ -1546,3 +1546,296 @@ func main() {
 	test()
 }
 ```
+
+- #### 闭包
+  - 定义在一个函数内部的函数
+  - 本质上是将函数内部和函数外包连接起来的桥梁或是函数和其引用环境的组合体
+  - `闭包=函数+引用环境`
+```go
+package main
+
+import "fmt"
+
+func add() func(int) int {
+	var x int
+	return func(y int) int {
+		x += y
+		return x
+	}
+}
+
+func main() {
+	var f = add()
+	fmt.Println(f(1)) // 1
+	fmt.Println(f(2)) // 3
+
+	f2 := add()
+	fmt.Println(f2(40)) // 40
+	fmt.Println(f2(50)) // 90
+}
+```
+
+```go
+package main
+
+import "fmt"
+
+// 闭包理解
+
+func sayHello(name string) func(string) string {
+	fmt.Println(name)
+	return func(n string) string {
+		name = n + name
+		return name
+	}
+}
+
+func sayHello2() func(string) string {
+	var name = "Hello,"
+	return func(n string) string {
+		name = name + n
+		return name
+	}
+}
+
+func main() {
+	str := sayHello("Tom")
+	fmt.Println(str)
+
+	fmt.Println("---------")
+
+	str2 := sayHello2()
+	s := str2("tom")
+	fmt.Println(s)
+}
+```
+
+- #### 递归
+  - 函数内部调用函数自身的函数称为递归
+  - 必须先定义函数的退出条件，没有退出条件，递归将成为死循环
+  - 递归函数很可能会产生一大堆的goroutine，也可能会出现栈空间内存溢出的问题
+```go
+package main
+
+import "fmt"
+
+func f1() {
+	// 阶乘
+	var s int = 1
+	for i := 1; i <= 5; i++ {
+		s *= i
+	}
+	fmt.Println(s)
+}
+
+func f2(n int) int {
+	// 阶乘
+	if n == 1 {
+		// 退出条件
+		return 1
+	} else {
+		// 自调用
+		return n * f2(n-1)
+	}
+}
+
+func f3(n int) int {
+	// 斐波那契数列
+	// f(n)=f(n-1)+f(n-2)且f(2)=f(1)=1
+	if n == 1 || n == 2 {
+		return 1
+	}
+	return f3(n-1) + f3(n-2)
+}
+
+func main() {
+	f1()
+	fmt.Println(f2(10))
+	fmt.Println(f3(10))
+}
+```
+
+### defer语句
+  - Go中的`defer`语句会将其后面跟随的语句进行延迟处理。在`defer`归属的函数即将返回时，将延迟处理的语句按`defer`定义的逆序进行执行，也就是先被`defer`的语句最后被执行，最后被`defer`的语句，最先被执行
+  - #### defer特性
+    - 关键字`defer`用于注册延迟调用
+    - 这些调用直到`return`前才被执。因此，可以用来做资源清理
+    - 多个`defer`语句，按先进后出的方式执行
+    - `defer`语句中的变量，在`defer`声明时就决定了 
+  - #### defer用途
+    - 关闭文件句柄
+    - 锁资源释放
+    - 数据库连接释放
+```go
+package main
+
+import "fmt"
+
+func main() {
+	fmt.Println("a")
+	fmt.Println("b")
+	fmt.Println("c")
+	fmt.Println("d")
+	// a b c d
+
+	fmt.Println("-----")
+
+	fmt.Println("a")
+	defer fmt.Println("b")
+	defer fmt.Println("c")
+	fmt.Println("d")
+	// a d c b
+}
+```
+
+### init函数
+
+  - Go有个特殊的函数`init`函数，先于`main`函数执行，实现包级别的一些初始化操作
+  - #### init函数的主要特点
+    - init函数先于`main`函数自动执行，不能被其他函数调用
+    - init函数没有输入参数，返回值
+    - 每个包可以有多个init函数
+    - 包的每个源文件也可以有多个init函数
+    - 同一个包的init执行顺序，Go没有明确定义
+    - 不同包的init函数按照包导入的依赖关系决定执行顺序
+  - 初始化顺序 : 变量的初始化->init()->main()
+```go
+package main
+
+import "fmt"
+
+var i int = initVar()
+
+func main() {
+	fmt.Println("main")
+}
+
+func initVar() int {
+	fmt.Println("initVar")
+	return 100
+}
+
+func init() {
+	fmt.Println("init1")
+}
+
+func init() {
+	fmt.Println("init2")
+}
+```
+
+### 指针
+  - Go中的函数传参都是值拷贝，当我们想要修改某个变量的时候，可以创建一个指向该变量地址的指针变量。传递数据使用指针，而无须拷贝数据
+  - 类型指针不能进行偏移和运算
+  - Go中的指针操作非常简单，只需要记住两个符号：`&`(取地址) 和`*`(根据地址取值)
+  - #### 指针地址和指针类型
+    - 每个变量在运行时都拥有一个地址，这个地址代表变量在内存中的位置。Go中使用`&`字符放在变量前面对变量进行取地址操作。Go中的值类型`(int,float,bool,string,array,struct)`都有对应的指针类型,如`*int,*int64,*string`
+  - #### 指针语法
+    - 一个变量指向了一个值的内存地址。(也就是我们声明了一个指针后，可以像变量赋值一样，把一个值的内存地址放入到指针当中)
+    - 类似于变量和常量，在使用指针前你需要声明指针
+    - ```go
+      var var_name *var-type
+    - `var-type` 指针类型
+    - `var_name` 指针变量名
+    - `*` 指定变量是作为一个指针
+```go
+package main
+
+import "fmt"
+
+func main() {
+	var ip *int
+	fmt.Println(ip)        // <nil>
+	fmt.Printf("%T\n", ip) // *int
+
+	var i int = 100
+	ip = &i
+	fmt.Println(ip)  // 0xc00001a0e0
+	fmt.Println(*ip) // 100
+
+	var sp *string
+	var s string = "hello"
+	sp = &s
+	fmt.Printf("%T\n", sp) // *string
+	fmt.Println(sp)        // 0xc00004e250
+	fmt.Println(*sp)       // hello
+
+	var bl *bool
+	var b bool = true
+	bl = &b
+	fmt.Printf("%T\n", bl) // *bool
+	fmt.Println(bl)        // 0xc0000a60dc
+	fmt.Println(*bl)       // true
+}
+```
+
+- #### 指针数组
+  - ```go
+    var ptr [MAX]*int // 表示数组里面的元素的类型是指针类型
+```go
+package main
+
+import "fmt"
+
+func main() {
+	a := [3]int{1, 2, 3}
+	var ptr [3]*int
+	fmt.Println(ptr) // [<nil> <nil> <nil>]
+
+	for i := 0; i < len(a); i++ {
+		ptr[i] = &a[i] // 值赋值给指针数组
+	}
+	fmt.Println(ptr) // [0xc000010138 0xc000010140 0xc000010148]
+
+	for i := 0; i < len(ptr); i++ {
+		fmt.Println(*ptr[i]) // 1 2 3
+	}
+}
+```
+
+### 类型定义和类型别名
+  - #### 区别
+    - 类型定义相当于定义了一个全新的类型，与之前的类型不同；但是类型别名并没有定义一个全新的类型，而是使用一个别名来替换之前的类型
+    - 类型别名只会在代码中存在，在编译完成之后并不会存在该别名
+    - 因为类型别名和原来的类型是一致的，所以原来的类型所拥有的方法，类型别名中也可以调用，但是如果是重新定义的一个类型，那么不可以调用之前的任何方法
+  - 类型定义语法 : ```type NewType Type```
+```go
+package main
+
+import "fmt"
+
+func main() {
+	type MyInt int
+	var i MyInt
+	i = 100
+	fmt.Println(i)  // 100
+	fmt.Printf("%T", i) // main.MyInt
+}
+```
+  - 类型别名语法 : `type NewType = Type`
+```go
+package main
+
+import "fmt"
+
+func main() {
+	type MyInt = int
+	var i MyInt
+	i = 100
+	fmt.Println(i)  // 100
+	fmt.Printf("%T", i) // int
+}
+```
+
+### 结构体
+  - Go中没有面向对象的概念了，但是可以使用结构体来实现，面向对象编程的一些特性，例如：继承，组合等
+  - 结构体的定义
+    - 结构体与类型定义类似，多了一个`struct`关键字
+    - ```go
+      type struct_variable_type struct {
+        member definition;
+        member definition;
+        ...
+        member definition;
+      }
+    
