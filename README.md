@@ -2220,3 +2220,105 @@ func main() {
 	fmt.Println(box.setting.info)
 }
 ```
+
+### 接口
+  - 接口类似公司的领导，他会定义一些通用规范，只设计规范，而不实现规范
+  - Go中的接口，是一种新的类型定义，它把所有的具有共性的方法定义在一起，任何其他类型只要实现了这些方法就是实现了这个接口
+```go
+package main
+
+import "fmt"
+
+type USB interface {
+	read()
+	write()
+}
+
+type Computer struct {
+	name string
+}
+
+type Mobile struct {
+	model string
+}
+
+func (receiver Computer) read() {
+	fmt.Printf("%v\n", receiver.name)
+	fmt.Print("read...\n")
+}
+func (receiver Computer) write() {
+	fmt.Printf("%v\n", receiver.name)
+	fmt.Print("write...\n")
+}
+
+func (m Mobile) read() {
+	fmt.Printf("%v\n", m.model)
+	fmt.Print("read...\n")
+}
+
+func (m Mobile) write() {
+	fmt.Printf("%v\n", m.model)
+	fmt.Print("write...\n")
+}
+
+func main() {
+	var c USB
+	c = Computer{name: "tom"}
+	c.read()
+	c.write()
+
+	fmt.Print("---------\n")
+
+	var m USB
+	m = Mobile{
+		model: "RedMi",
+	}
+	m.read()
+	m.write()
+}
+```
+
+- #### 接口值类型接收者和指针类型接收者
+  - 本质上和方法的值类型接收者和指针类型接收者的思考方式是一样的
+```go
+package main
+
+import "fmt"
+
+type Pet interface {
+	eat(string) string
+	read(string) string
+}
+
+type Dog struct {
+	name string
+}
+
+func (receiver Dog) eat(name string) string {
+	receiver.name = name
+	fmt.Println(name)
+	return "eat very good!"
+}
+
+func (receiver *Dog) read(name string) string {
+	receiver.name = name
+	fmt.Println(name)
+	return "read ok"
+}
+
+func main() {
+	var dog Pet = new(Dog)
+
+	res := dog.eat("food")
+	fmt.Println(res)
+
+	res2 := dog.read("food")
+	fmt.Println(res2)
+
+	fmt.Println(dog)
+}
+```
+
+- #### 接口和类型的关系
+  - 一个类型可以实现多个接口
+  - 多个类型可以实现同一个接口(多态)

@@ -2,55 +2,46 @@ package main
 
 import "fmt"
 
-type Box struct {
-	title   string
-	url     string
-	setting Setting
+type Music interface {
+	playMusic()
 }
 
-type Setting struct {
-	account  string
-	password string
-	token    string
-	info     Info
+type Video interface {
+	playVideo()
 }
 
-type Info struct {
-	avatar string
-	name   string
-	age    int
+type Mobile struct{}
+
+func (receiver Mobile) playMusic() {
+	fmt.Println("play music")
 }
 
-func (receiver *Setting) Login(account string, password string) {
-	if account == receiver.account && password == receiver.password {
-		setToken(receiver)
-	}
+func (receiver Mobile) playVideo() {
+	fmt.Println("play video")
 }
 
-func setToken(setting *Setting) {
-	setting.token = "token-true"
+type Person interface {
+	read()
+}
+
+type A struct{}
+type B struct{}
+
+func (receiver A) read() {
+	fmt.Println("A")
+}
+func (receiver B) read() {
+	fmt.Println("B")
 }
 
 func main() {
-	box := Box{
-		title: "test",
-		url:   "127.0.0.1",
-		setting: Setting{
-			account:  "admin",
-			password: "admin",
-		},
-	}
+	var m Music = new(Mobile)
+	m.playMusic()
+	var v Video = new(Mobile)
+	v.playVideo()
 
-	box.setting.Login("admin", "admin")
-	if box.setting.token == "token-true" {
-		box.setting.info.avatar = "https://"
-		box.setting.info.age = 20
-		box.setting.info.name = "tom"
-	} else {
-		fmt.Println("login error")
-	}
-
-	fmt.Println(box)
-	fmt.Println(box.setting)
-	fmt.Println(box.setting.info)
+	var perA Person = new(A)
+	var perB Person = new(B)
+	perA.read()
+	perB.read()
 }
