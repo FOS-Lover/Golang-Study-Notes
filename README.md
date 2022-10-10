@@ -1829,13 +1829,394 @@ func main() {
 
 ### 结构体
   - Go中没有面向对象的概念了，但是可以使用结构体来实现，面向对象编程的一些特性，例如：继承，组合等
-  - 结构体的定义
-    - 结构体与类型定义类似，多了一个`struct`关键字
-    - ```go
-      type struct_variable_type struct {
-        member definition;
-        member definition;
-        ...
-        member definition;
-      }
-    
+- #### 结构体的定义
+  - 结构体与类型定义类似，多了一个`struct`关键字
+  - ```go
+    type struct_variable_type struct {
+      member definition;
+      member definition;
+      ...
+      member definition;
+    }
+  - `type` 结构体类型定义关键字
+  - `struct_variable_type` 结构体类型名称
+  - `struct` 结构体关键字
+  - `member definition` 成员定义
+```go
+package main
+
+import "fmt"
+
+func main() {
+	// 声明结构体
+	type Person struct {
+		id   int
+		age  int
+		name string
+	}
+
+	// 声明结构体变量
+	var tom Person
+	fmt.Printf("%T, %v\n", tom, tom)
+	jack := Person{}
+	fmt.Printf("%T, %v\n", jack, jack)
+
+	// 结构体赋值-1
+	lave := Person{
+		id:   1,
+		age:  10,
+		name: "lave",
+	}
+	fmt.Printf("%v", lave)
+	fmt.Println(lave.name)
+
+	// 结构体赋值-2
+	leso := Person{}
+	leso.id = 1
+	leso.age = 20
+	leso.name = "leso"
+	fmt.Printf("%v", leso)
+	fmt.Println(leso.name)
+
+	// 匿名结构体
+	var kono struct {
+		id   int
+		age  int
+		name string
+	}
+	kono.id = 10
+	kono.age = 20
+	kono.name = "kono"
+	fmt.Println(kono)
+}
+```
+
+- #### 结构体的初始化
+  - 未初始化的结构体成员都是零值
+  - `int=0` `float=0.0` `bool=false` `string=nil`
+```go
+package main
+
+import "fmt"
+
+func main() {
+	type Person struct {
+		id      int
+		name    string
+		isAdmin bool
+		price   float64
+	}
+	var tom Person
+	fmt.Println(tom)
+
+	// 键值对初始化
+	a := Person{
+		id:      1,
+		name:    "a",
+		isAdmin: true,
+		price:   2.1,
+	}
+	fmt.Println(a)
+
+	// 列表初始化
+	b := Person{
+		1,
+		"b",
+		false,
+		2.2,
+	}
+	fmt.Println(b)
+
+	// 部分初始化
+	c := Person{
+		id:    2,
+		name:  "c",
+		price: 2.3,
+	}
+	fmt.Println(c)
+}
+```
+
+- #### 结构体指针
+```go
+package main
+
+import "fmt"
+
+func f1() {
+	// 声明式创建结构体指针
+	type Person struct {
+		id   int
+		name string
+		age  int
+	}
+	tom := Person{
+		id:   101,
+		name: "tom",
+		age:  10,
+	}
+	var p_person *Person
+	p_person = &tom
+	fmt.Println(p_person)  // &{101 tom 10}
+	fmt.Println(tom)       // {101 tom 10}
+	fmt.Println(&p_person) // 0xc00000a028
+}
+
+func f2() {
+	// 通过new关键字创建结构体指针
+	type Person struct {
+		id   int
+		name string
+		age  int
+	}
+	tom := new(Person)
+	fmt.Println(&tom) // 0xc00000a038
+	fmt.Println(*tom) // {0 0}
+}
+
+func main() {
+	f1()
+	f2()
+}
+```
+
+- #### 函数的结构体参数
+  - 结构体可以像普通变量一样，作为函数的参数
+  - 直接传递结构体，这是一个副本(拷贝)，在函数内部不会改变外面结构体内容
+  - 传递结构体指针，这时在函数内部，能够改变外部结构体内容
+```go
+package main
+
+import "fmt"
+
+type Person struct {
+	id   int
+	name string
+}
+
+func showPerson(per Person) {
+	per.id = 100
+	fmt.Println("per:", per)
+}
+
+func showPerson2(per *Person) {
+	per.id = 101
+	fmt.Println(per)
+}
+
+func main() {
+	// 值传递
+	tom := Person{id: 1, name: "tom"}
+	fmt.Println("tom:", tom)
+	showPerson(tom)
+	fmt.Println("tom:", tom)
+
+	fmt.Println("----")
+
+	// 地址拷贝
+	jack := Person{
+		id:   1,
+		name: "jack",
+	}
+	fmt.Println(jack)
+	per := &jack
+	showPerson2(per)
+	fmt.Println(*per)
+}
+```
+
+- #### 结构体嵌套
+  - Go中没有面向对象编程思想，也没有继承关系，但是可以通过结构体嵌套来实现这种效果
+```go
+package main
+
+import "fmt"
+
+func main() {
+	type Dog struct {
+		name  string
+		age   int
+		color string
+	}
+	type Person struct {
+		dog  Dog
+		name string
+		age  int
+	}
+	dog := Dog{
+		name:  "losa",
+		age:   2,
+		color: "black",
+	}
+	per := Person{
+		name: "Tom",
+		age:  20,
+		dog:  dog,
+	}
+	fmt.Println(per)
+	fmt.Println(per.dog)
+	fmt.Println(per.dog.name)
+}
+```
+
+### 方法
+  - Go没有面向对象的特性，也没有类的概念，但是可以通过结构体来模拟这些特性，也可以声明一些方法，属于某个结构体
+  - Go中的方法，是一种特殊的函数，定义于`struct`之上(与`struct`关联，绑定)，被称为`struct`的接收者(receiver)
+  - 方法就是有接受者的函数
+  - 语法格式
+  - ```go
+    type mytype struct {}
+    func (recv mytype) my_method(para) return_type {}
+    func (recv *mytype) my_method(para) return_type {}
+  - `mytype` 结构体名称
+  - `recv` 接收该方法的结构体(receiver)
+  - `my_method` 方法名称
+  - `para` 参数列表
+  - `return_type` 返回值类型
+```go
+package main
+
+import "fmt"
+
+type Person struct {
+	name string
+}
+
+func (receiver Person) eat() {
+	fmt.Println("eat:", receiver)
+}
+
+func (receiver Person) sleep() {
+	fmt.Println("sleep:", receiver)
+}
+
+type Customer struct {
+	name string
+}
+
+func (c Customer) login(name string, pwd string) bool {
+	fmt.Println(c.name)
+	if name == "tom" && pwd == "123" {
+		return true
+	}
+	return false
+}
+
+func main() {
+	per := Person{
+		name: "tom",
+	}
+	per.sleep()
+	per.eat()
+
+	cus := Customer{
+		name: "tom",
+	}
+	resp := cus.login("tom", "123")
+	fmt.Println(resp)
+}
+```
+
+- #### 方法接收者指针类型
+```go
+package main
+
+import "fmt"
+
+type Person struct {
+	name string
+}
+
+func f1() {
+
+	p := Person{
+		name: "tom",
+	}
+	p2 := &Person{
+		name: "tom",
+	}
+	fmt.Println(p, p2)
+	fmt.Printf("%T %T\n", p, p2)
+}
+
+func (receiver Person) showPerson1() {
+	receiver.name = "tom..."
+}
+func (receiver *Person) showPerson2() {
+	receiver.name = "tom..."
+}
+func main() {
+	//f1()
+	p1 := Person{
+		name: "tom",
+	}
+	p2 := Person{
+		name: "tom",
+	}
+	p1.showPerson1()
+	fmt.Println(p1)
+	fmt.Println("-----")
+	p2.showPerson2()
+	fmt.Println(p2)
+}
+```
+
+- #### 方法结构体和嵌套结构体的实例
+```go
+package main
+
+import "fmt"
+
+type Box struct {
+	title   string
+	url     string
+	setting Setting
+}
+
+type Setting struct {
+	account  string
+	password string
+	token    string
+	info     Info
+}
+
+type Info struct {
+	avatar string
+	name   string
+	age    int
+}
+
+func (receiver *Setting) Login(account string, password string) {
+	if account == receiver.account && password == receiver.password {
+		setToken(receiver)
+	}
+}
+
+func setToken(setting *Setting) {
+	setting.token = "token-true"
+}
+
+func main() {
+	box := Box{
+		title: "test",
+		url:   "127.0.0.1",
+		setting: Setting{
+			account:  "admin",
+			password: "admin",
+		},
+	}
+
+	box.setting.Login("admin", "admin")
+	if box.setting.token == "token-true" {
+		box.setting.info.avatar = "https://"
+		box.setting.info.age = 20
+		box.setting.info.name = "tom"
+	} else {
+		fmt.Println("login error")
+	}
+
+	fmt.Println(box)
+	fmt.Println(box.setting)
+	fmt.Println(box.setting.info)
+}
+```
