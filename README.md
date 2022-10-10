@@ -1,7 +1,7 @@
 # Golang Study Note
 
 - 采用 <a href="https://github.com/FOS-Lover/Golang-Study-Notes/blob/master/LICENSE">MIT</a> 协议
-- 更新于 : 2022年10月9日
+- 更新于 : 2022年10月10日
 
 ### 常用命令
 
@@ -2322,3 +2322,168 @@ func main() {
 - #### 接口和类型的关系
   - 一个类型可以实现多个接口
   - 多个类型可以实现同一个接口(多态)
+```go
+package main
+
+import "fmt"
+
+// 一个类型可以实现多个接口
+type Music interface {
+	playMusic()
+}
+
+type Video interface {
+	playVideo()
+}
+
+type Mobile struct{}
+
+func (receiver Mobile) playMusic() {
+	fmt.Println("play music")
+}
+
+func (receiver Mobile) playVideo() {
+	fmt.Println("play video")
+}
+
+type Person interface {
+	read()
+}
+
+// 多个类型可以实现同一个接口(多态)
+type A struct{}
+type B struct{}
+
+func (receiver A) read() {
+	fmt.Println("A")
+}
+func (receiver B) read() {
+	fmt.Println("B")
+}
+
+func main() {
+	var m Music = new(Mobile)
+	m.playMusic()
+	var v Video = new(Mobile)
+	v.playVideo()
+
+	var perA Person = new(A)
+	var perB Person = new(B)
+	perA.read()
+	perB.read()
+}
+```
+
+- #### 接口嵌套
+  - 接口可以通过嵌套，创建新的接口
+```go
+package main
+
+import "fmt"
+
+type AA interface {
+	readAA()
+}
+
+type BB interface {
+	readBB()
+}
+
+type CC interface {
+	AA
+	BB
+}
+
+type ABC struct{}
+
+func (receiver ABC) readAA() {
+	fmt.Println("AAAA")
+}
+
+func (receiver ABC) readBB() {
+	fmt.Println("BBBB")
+}
+
+func main() {
+	var c CC = new(ABC)
+	c.readAA()
+	c.readBB()
+}
+```
+
+- #### 通过接口实现OCP设计原则
+  - 面向对象的可复用设计的第一块基石，便是所谓的“开-闭”原则(Open-Closed Principle，缩写为OCP)
+```go
+package main
+
+import "fmt"
+
+type Pet interface {
+	eat()
+	sleep()
+}
+type Dog struct{}
+type Cat struct{}
+
+// Dog 实现Pet接口
+func (receiver Dog) eat() {
+	fmt.Println("dog eat")
+}
+func (receiver Dog) sleep() {
+	fmt.Println("dog sleep")
+}
+
+// Cat 实现Pet接口
+func (receiver Cat) eat() {
+	fmt.Println("cat eat")
+}
+func (receiver Cat) sleep() {
+	fmt.Println("cat sleep")
+}
+
+type Person struct{}
+
+// pet 既可以传递Dog也可以传递Cat
+func (receiver Person) care(pet Pet) {
+	pet.eat()
+	pet.sleep()
+}
+func main() {
+	dog := Dog{}
+	cat := Cat{}
+	person := Person{}
+	person.care(dog)
+	person.care(cat)
+}
+```
+
+- #### 使用OOP思想的属性和方法
+```go
+package main
+
+import "fmt"
+
+type Person struct {
+	name string
+	age  int
+}
+
+func (receiver Person) eat() {
+	fmt.Println("eat")
+}
+func (receiver Person) sleep() {
+	fmt.Println("sleep")
+}
+func (receiver Person) work() {
+	fmt.Println("work")
+}
+func main() {
+	p := Person{
+		name: "tom",
+		age:  20,
+	}
+	p.eat()
+	p.sleep()
+	p.work()
+}
+```

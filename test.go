@@ -2,46 +2,26 @@ package main
 
 import "fmt"
 
-type Music interface {
-	playMusic()
+type Person struct {
+	name string
+	age  int
 }
 
-type Video interface {
-	playVideo()
+func (receiver Person) eat() {
+	fmt.Println("eat")
 }
-
-type Mobile struct{}
-
-func (receiver Mobile) playMusic() {
-	fmt.Println("play music")
+func (receiver Person) sleep() {
+	fmt.Println("sleep")
 }
-
-func (receiver Mobile) playVideo() {
-	fmt.Println("play video")
+func (receiver Person) work() {
+	fmt.Println("work")
 }
-
-type Person interface {
-	read()
-}
-
-type A struct{}
-type B struct{}
-
-func (receiver A) read() {
-	fmt.Println("A")
-}
-func (receiver B) read() {
-	fmt.Println("B")
-}
-
 func main() {
-	var m Music = new(Mobile)
-	m.playMusic()
-	var v Video = new(Mobile)
-	v.playVideo()
-
-	var perA Person = new(A)
-	var perB Person = new(B)
-	perA.read()
-	perB.read()
+	p := Person{
+		name: "tom",
+		age:  20,
+	}
+	p.eat()
+	p.sleep()
+	p.work()
 }
