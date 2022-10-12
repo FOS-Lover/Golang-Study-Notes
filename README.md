@@ -2,6 +2,7 @@
 
 - 采用 <a href="https://github.com/FOS-Lover/Golang-Study-Notes/blob/master/LICENSE">MIT</a> 协议
 - 更新于 : 2022年10月12日
+- 不足地方或错误地方欢迎fork提交
 
 ### 常用命令
 
