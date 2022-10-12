@@ -1,7 +1,7 @@
 # Golang Study Note
 
 - 采用 <a href="https://github.com/FOS-Lover/Golang-Study-Notes/blob/master/LICENSE">MIT</a> 协议
-- 更新于 : 2022年10月11日
+- 更新于 : 2022年10月12日
 
 ### 常用命令
 
@@ -2458,6 +2458,7 @@ func main() {
 ```
 
 - #### 使用OOP思想的属性和方法
+
 ```go
 package main
 
@@ -2487,3 +2488,182 @@ func main() {
 	p.work()
 }
 ```
+
+### 继承
+  - Go中是没有OOP的概念，也没有继承的概念，可以通过结构体嵌套实现这个特性
+```go
+package main
+
+import "fmt"
+
+type Animal struct {
+	name string
+	age  int
+}
+
+func (receiver Animal) eat() {
+	fmt.Println("eat", receiver.name, receiver.age)
+}
+
+func (receiver Animal) sleep() {
+	fmt.Println("sleep", receiver.name, receiver.age)
+}
+
+type Dog struct {
+	Animal
+}
+
+type Cat struct {
+	Animal
+}
+
+func main() {
+	d := Dog{
+		Animal{
+			name: "Losa",
+			age:  2,
+		},
+	}
+	c := Cat{
+		Animal{
+			name: "Cosa",
+			age:  3,
+		},
+	}
+	d.eat()
+	d.sleep()
+
+	c.eat()
+	c.sleep()
+}
+```
+
+### 构造函数
+  - Go中没有构造函数的概念，但可以使用函数来模拟构造函数的功能
+```go
+package main
+
+import "fmt"
+
+type Person struct {
+	name string
+	age  int
+}
+
+func NewPerson(name string, age int) (*Person, error) {
+	if name == "" {
+		return nil, fmt.Errorf("name 不能为空")
+	}
+	if age < 0 {
+		return nil, fmt.Errorf("age 不能小于0")
+	}
+	return &Person{name: name, age: age}, nil
+}
+
+func main() {
+	per, err := NewPerson("tom", 0)
+	if err == nil {
+		fmt.Println(per)
+	} else {
+		fmt.Println(err)
+	}
+}
+```
+
+### 包
+  - 包可以区分命名空间(一个文件夹中不能有两个同名文件)，也可以更好的管理项目。
+  - Go创建一个包，一般是创建一个文件夹，在该文件夹里面的go文件中，使用package关键字声明包名称
+  - 通常，文件夹名称和包名相同，并且同一个文件下面只有一个包
+
+- #### 创建包
+  - 创建一个名为service的文件夹
+  - 创建一个service.go文件
+  - 在该文件中声明包
+  - ```go
+    package service
+    
+    func test(){
+      print("test")
+    }
+
+- #### 导入包
+  - 要使用某个包下面的变量或者方法，需要导入该包，要导入从`GOPATH`开始的包路径，
+  - ```go
+    package main
+    
+    import "service"
+    
+    func main(){
+      service.test()
+    }
+- #### 包管理工具
+  - go modules 是 Golang 1.11新加的特性，用来管理模块中包的依赖关系
+  - ##### 使用方法
+    - 初始化模块
+    - `go mod init <项目模块名称>`
+    - 依赖关系处理，根据go.mod文件
+    - `go mod tidy`
+    - 将依赖包复制到项目下的vendor目录(如果包被屏蔽(墙),可以使用这个命令，然后再使用`go build -mod=vendor`编译)
+    - `go mod vendor`
+    - 显示依赖关系
+    - `go list -m all`
+    - 显示详细依赖关系
+    - `go list -m -json all`
+    - 下载依赖 [path@version] 是非必写的
+    - `go mod download [path@version]`
+```go
+package main
+
+import (
+	"fmt"
+	"github.com/FOS-Lover/Golang-Study-Notes/service"
+	"github.com/gin-gonic/gin"
+)
+
+func main() {
+	fmt.Println("Hello world")
+	service.TestUserService()
+	service.TestCustomerService()
+
+	r := gin.Default()
+	r.GET("/ping", func(c *gin.Context) {
+		c.JSON(200, gin.H{
+			"message": "ping",
+		})
+	})
+
+}
+```
+
+### 并发编程
+
+- #### 协程
+  - Go中的并发是函数相互独立运行的能力。Goroutines是并发运行的函数。
+  - Go提供了Goroutines作为并发处理操作的一种方式
+  - 创建一个协程非常简单，在任务函数前面加一个`go`关键字
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func showMsg(msg string) {
+	for i := 0; i < 5; i++ {
+		fmt.Println(msg)
+		time.Sleep(time.Millisecond * 100)
+	}
+}
+
+func main() {
+	go showMsg("test") // 启动一个协程来运行
+	go showMsg("Golang")
+
+	time.Sleep(time.Millisecond * 2000)
+	fmt.Println("main end") // 主函数退出 程序就结束了
+
+}
+```
+
+- #### 通道channel
