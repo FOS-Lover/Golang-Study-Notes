@@ -1,7 +1,7 @@
 # Golang Study Note
 
 - 采用 <a href="https://github.com/FOS-Lover/Golang-Study-Notes/blob/master/LICENSE">MIT</a> 协议
-- 更新于 : 2022年10月12日
+- 更新于 : 2022年10月13日
 - 不足地方或错误地方欢迎fork提交
 
 ### 常用命令
@@ -2668,3 +2668,289 @@ func main() {
 ```
 
 - #### 通道channel
+  - Go中提供了一种为通道的机制，用于在goroutine之间共享数据。当您作为goroutine执行并发活动时，需要在goroutine之间共享资源或数据，通道充当goroutine之间的管道(通道)并提供了一种机制来保证同步交换
+  - 需要在声明通道时指定数据类型。可以共享内置，命名，结构和引用类型的值和指针。数据在通道上传递：在任何给定时间只有一个goroutine可以访问数据项：因此按照设计不会发生数据竞争
+  - 根据数据交换的行为，有两种类型的通道：无缓冲通道和缓冲通道。无缓冲通道用于执行goroutine之间的同步通信，而缓冲通道用于执行异步通信。无缓冲通道保证在发送和接收发送的瞬间执行两个goroutine之间的交换。缓冲通道没有这样的保证
+  - 通道由make函数创建，该函数指定chan关键字和通道的元素类型
+  - ##### 创建无缓冲和缓冲通道的语法
+  - ```go
+    Unbuffered := make(chan int) // 整型无缓冲通道
+    buffered := make(chan int, 10) // 整型有缓冲通道
+  - 使用内置函数`make`创建无缓冲和缓冲通道，`make`第一个参数需要关键字`chan`,然后是通道允许交换的数据类型
+  - ##### 将值发送到通道的代码块需要`<-`运算符
+  - ```go
+    goroutine1 := make(chan string, 5)
+    goroutine1 <- "test"
+  - ##### 从通道接收值的代码块
+  - ```go
+    data := <-goroutine1
+  - 通道发送和接收的特性
+    - 对于同一个通道，发送操作之间是互斥的，接收操作之间也是互斥的
+    - 发送操作和接收操作中对元素值的处理都是不可分割的
+    - 发送操作在完全完成之前会被阻塞。接收操作也是如此
+```go
+package main
+
+import (
+	"fmt"
+	"math/rand"
+	"time"
+)
+
+var values = make(chan int)
+
+func send() {
+	rand.Seed(time.Now().UnixNano())
+	value := rand.Intn(10)
+	fmt.Println("send : ", value)
+	time.Sleep(time.Second * 5)
+	values <- value
+}
+
+func main() {
+	defer close(values)
+	go send()
+	fmt.Println("wait...")
+	value := <-values
+	fmt.Println("receiver : ", value)
+	fmt.Println("end...")
+}
+```
+
+- #### WaitGroup实现同步
+  - 查看添加`WaitGroup`和不添加`WaitGroup`的区别
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+)
+
+var wp sync.WaitGroup
+
+func showMsg(i int) {
+	//defer wp.Add(-1)
+	defer wp.Done() // goroutine结束就登记-1
+	fmt.Println(i)
+}
+
+func main() {
+	for i := 0; i < 10; i++ {
+		go showMsg(i)
+		wp.Add(1) // 启动一个goroutine就登记+1
+	}
+	wp.Wait() // 等待所有登记的goroutine都结束
+	fmt.Println("--end--")
+}
+```
+
+- #### runtime包
+  - runtime包里面定义了一些协程管理相关的API
+
+- ##### runtime.Gosched()
+  - 让出CPU时间片，重新等待安排任务
+```go
+  package main
+  
+  import (
+      "fmt"
+      "runtime"
+  )
+  
+  func show(s string) {
+      for i := 0; i < 2; i++ {
+          fmt.Println(s)
+      }
+  }
+  func main() {
+      go show("java") // 子协程运行
+      for i := 0; i < 2; i++ {
+          runtime.Gosched() // 调度cpu给其他子协程
+          fmt.Println("Golang")
+      }
+      fmt.Println("end...")
+  }
+```
+
+- ##### runtime.Goexit()
+  - 退出当前协程
+```go
+package main
+
+import (
+	"fmt"
+	"runtime"
+	"time"
+)
+
+func show() {
+	for i := 0; i < 10; i++ {
+		fmt.Println(i)
+		if i >= 5 {
+			runtime.Goexit()
+		}
+	}
+}
+
+func main() {
+	go show()
+	time.Sleep(time.Second)
+}
+```
+- ##### runtime.GOMAXPROCS()
+  - 设置CPU核心数
+```go
+package main
+
+import (
+	"fmt"
+	"runtime"
+	"time"
+)
+
+func a() {
+	for i := 0; i < 10; i++ {
+		fmt.Println("a:", i)
+	}
+}
+
+func b() {
+	for i := 0; i < 10; i++ {
+		fmt.Println("b:", i)
+	}
+}
+
+func main() {
+	fmt.Println(runtime.NumCPU()) // CPU核心数
+	runtime.GOMAXPROCS(2)
+	go a()
+	go b()
+	time.Sleep(time.Second)
+	fmt.Println("end...")
+}
+```
+
+### Mutex互斥锁实现同步
+  - 除了使用channel实现同步之外，还可以使用Mutex互斥锁的方式实现同步
+```go
+package main
+
+import (
+	"fmt"
+	"sync"
+	"time"
+)
+
+var i int = 100
+
+var wg sync.WaitGroup
+
+var lock sync.Mutex
+
+func add() {
+	defer wg.Done()
+	lock.Lock()
+	i += 1
+	fmt.Println("i++", i)
+	time.Sleep(time.Millisecond)
+	lock.Unlock()
+}
+
+func sub() {
+	lock.Lock()
+	time.Sleep(time.Millisecond)
+	defer wg.Done()
+	i -= 1
+	fmt.Println("i--", i)
+	lock.Unlock()
+}
+func main() {
+	for i := 0; i < 100; i++ {
+		wg.Add(1)
+		go add()
+		wg.Add(1)
+		go sub()
+	}
+	wg.Wait()
+	fmt.Println("end i:", i)
+}
+```
+
+### channel的遍历
+
+```go
+package main
+
+import "fmt"
+
+var c = make(chan int)
+
+func main() {
+
+	go func() {
+		for i := 0; i < 2; i++ {
+			c <- i
+		}
+		close(c)
+	}()
+
+	for i := 0; i < 3; i++ {
+		r := <-c
+		fmt.Println(r)
+	}
+
+	for i := range c {
+		fmt.Println(i)
+	}
+
+	for {
+		v, ok := <-c
+		if ok {
+			fmt.Println(v)
+		} else {
+			break
+		}
+	}
+	
+}
+```
+
+### select
+  - select是Go中的一个控制结构，类似于`switch`语句，用于处理异步IO操作。`select`会监听case语句中的channel的读写操作，当case中channel读写操作为非阻塞状态(既能读写)时，将会触发相应的动作
+    - select中的case语句必须时一个channel操作
+    - select中的default子句是可运行的
+  - 如果有多个`case`都可以运行，`select`会随机公平地选出一个执行，其他不会执行
+  - 如果没有可运行的`case`语句，且有`default`语句，那么就会执行`default`的动作
+  - 如果没有可运行的`case`语句，且没有`default`语句，`select`将阻塞，直到某个`case`通信可以运行
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+var chanInt = make(chan int)
+var chanStr = make(chan string)
+
+func main() {
+	go func() {
+		chanInt <- 100
+		chanStr <- "Hello"
+		defer close(chanInt)
+		defer close(chanStr)
+	}()
+	for {
+		select {
+		case r := <-chanInt:
+			fmt.Println("chanInt:", r)
+		case r := <-chanStr:
+			fmt.Println("chanStr:", r)
+		default:
+			fmt.Println("default...")
+		}
+		time.Sleep(time.Second)
+	}
+}
+```
