@@ -2831,7 +2831,7 @@ func main() {
 }
 ```
 
-### Mutex互斥锁实现同步
+- #### Mutex互斥锁实现同步
   - 除了使用channel实现同步之外，还可以使用Mutex互斥锁的方式实现同步
 ```go
 package main
@@ -2877,7 +2877,7 @@ func main() {
 }
 ```
 
-### channel的遍历
+- #### channel的遍历
 
 ```go
 package main
@@ -2954,3 +2954,5 @@ func main() {
 	}
 }
 ```
+
+- #### Timer
