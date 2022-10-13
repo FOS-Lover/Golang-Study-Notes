@@ -2916,7 +2916,7 @@ func main() {
 }
 ```
 
-### select
+- #### select
   - select是Go中的一个控制结构，类似于`switch`语句，用于处理异步IO操作。`select`会监听case语句中的channel的读写操作，当case中channel读写操作为非阻塞状态(既能读写)时，将会触发相应的动作
     - select中的case语句必须时一个channel操作
     - select中的default子句是可运行的
