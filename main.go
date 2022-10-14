@@ -17,4 +17,5 @@ func main() {
 			"message": "ping",
 		})
 	})
+	r.Run() // 8080
 }

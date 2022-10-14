@@ -3010,3 +3010,138 @@ func main() {
 	fmt.Println(time.Now())
 }
 ```
+
+- #### Ticker
+  - Timer只执行一次，Ticker可以周期的执行
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func f1() {
+	ticker := time.NewTicker(time.Second)
+
+	count := 1
+	for _ = range ticker.C {
+		fmt.Println("ticker..")
+		count++
+		if count >= 5 {
+			ticker.Stop()
+			break
+		}
+	}
+}
+
+func f2() {
+	ticker := time.NewTicker(time.Second)
+
+	chanInt := make(chan int)
+
+	go func() {
+		for _ = range ticker.C {
+			select {
+			case chanInt <- 1:
+			case chanInt <- 2:
+			case chanInt <- 3:
+			}
+		}
+	}()
+	sum := 0
+	for i := range chanInt {
+		fmt.Println("收到: ", i)
+		sum += i
+		if sum >= 10 {
+			break
+		}
+	}
+}
+
+func main() {
+	f1()
+	f2()
+}
+```
+
+- #### 原子变量的引入
+```go
+package main
+
+import (
+	"fmt"
+	"sync/atomic"
+	"time"
+)
+
+var i int32 = 100
+
+func add() {
+	atomic.AddInt32(&i, 1)
+}
+func sub() {
+	atomic.AddInt32(&i, -1)
+}
+
+func main() {
+
+	for i := 0; i < 100; i++ {
+		go add()
+		go sub()
+	}
+	time.Sleep(time.Second * 2)
+	fmt.Println("exit...", i)
+}
+```
+
+- #### 原子操作的详解
+  - atomic提供的原子操作能够确保任一时刻只有一个goroutine对变量进行操作，善用atomic能够避免程序中出现大量的锁操作
+  - atomic常见操作有
+    - 增减
+    - 载入 read
+    - 比较并交换 cas
+    - 交换
+    - 存储 write
+```go
+package main
+
+import (
+  "fmt"
+  "sync/atomic"
+)
+
+func test_add() {
+  var i int32 = 100
+  atomic.AddInt32(&i, 1)
+  fmt.Println(i)	// 101
+  atomic.AddInt32(&i, -1)
+  fmt.Println(i)	// 100
+
+  var j int64 = 200
+  atomic.AddInt64(&j, 1)
+  fmt.Println(j)	// 201
+  atomic.AddInt64(&j, -1)
+  fmt.Println(j)	// 200
+}
+func test_rw() {
+  var i int32 = 100
+  atomic.LoadInt32(&i) // read
+  fmt.Println(i)	// 100
+  atomic.StoreInt32(&i, 200) // write
+  fmt.Println(i)	// 200
+}
+
+func test_cas() {
+  var i int32 = 100
+  b := atomic.CompareAndSwapInt32(&i, 100, 200)
+  fmt.Println(b)	// true
+  fmt.Println(i)	// 200
+}
+
+func main() {
+  test_add()
+  test_rw()
+  test_cas()
+}
+```
