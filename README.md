@@ -1,7 +1,7 @@
 # Golang Study Note
 
 - 采用 <a href="https://github.com/FOS-Lover/Golang-Study-Notes/blob/master/LICENSE">MIT</a> 协议
-- 更新于 : 2022年10月13日
+- 更新于 : 2022年10月14日
 - 不足地方或错误地方欢迎fork提交
 
 ### 常用命令
@@ -3145,3 +3145,237 @@ func main() {
   test_cas()
 }
 ```
+
+### os模块
+  - os标准库实现了平台(操作系统)无关的编程接口
+
+- #### 文件目录相关
+  - 增删改查写文件
+  - 增删改目录
+
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+)
+
+func createFile() {
+	// 创建文件
+	file, err := os.Create("a.txt")
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println(file.Name())
+	}
+}
+
+func createDir() {
+	// 创建单个目录
+	err := os.Mkdir("test2", os.ModePerm)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	err2 := os.MkdirAll("a/b/c", os.ModePerm)
+	if err2 != nil {
+		fmt.Println(err2)
+	}
+}
+func deleteFileOrDir() {
+	// 删除文件
+	err := os.Remove("a.txt")
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	// 删除目录
+	err2 := os.RemoveAll("test2")
+	if err2 != nil {
+		fmt.Println(err2)
+	}
+}
+func getWd() {
+	// 获取当前的工作目录
+	dir, _ := os.Getwd()
+	fmt.Println(dir)
+
+	// 修改目录
+	os.Chdir("d:/")
+	dir, _ = os.Getwd()
+	fmt.Println(dir)
+
+	// 临时目录
+	tmp := os.TempDir()
+	fmt.Println(tmp)
+}
+
+func rename() {
+	// 重命名
+	err := os.Rename("text2.txt", "test.txt")
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+
+func readFile() {
+	// 读取文件，返回字节数组
+	bt, _ := os.ReadFile("test.txt")
+	fmt.Println(string(bt[:]))
+}
+func writeFile() {
+	// 写入文件
+	str := "test"
+	err := os.WriteFile("test.txt", []byte(str), os.ModePerm)
+	if err != nil {
+		fmt.Println(err)
+	}
+}
+func main() {
+	//createFile()
+	//createDir()
+	//deleteFileOrDir()
+	//getWd()
+	//rename()
+	//readFile()
+	writeFile()
+}
+```
+
+- #### File文件读操作
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+)
+
+// 打开关闭文件
+func openCloseFile() {
+	// 只能读
+	file, err := os.Open("test.txt")
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println(file.Name())
+	}
+	errClose := file.Close()
+	if errClose != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println(errClose)
+	}
+	// 可以加权和加建等
+	file2, err2 := os.OpenFile("test2.txt", os.O_RDWR|os.O_CREATE, 755)
+	if err2 != nil {
+		fmt.Println(err2)
+	} else {
+		fmt.Println(file2)
+	}
+	errClose2 := file2.Close()
+	if errClose2 != nil {
+		fmt.Println(errClose2)
+	}
+}
+
+// 创建文件
+func createFile() {
+	// 创建文件: 等价于os.OpenFile(name, os.O_RDWR|os.O_CREATE, 755)
+	f, _ := os.Create("a.txt")
+	fmt.Println(f.Name())
+	// 创建临时文件: 第一个参数 目录默认，Temp 第二个参数 文件名前缀
+	f2, _ := os.CreateTemp("", "temp")
+	fmt.Println(f2.Name())
+}
+
+// 读取文件
+func readFile() {
+	// 固定字节读取
+	/*
+		f, _ := os.Open("test.txt")
+		for {
+			buf := make([]byte, 10)
+			n, err := f.Read(buf)
+			if err == io.EOF {
+				break
+			} else {
+				fmt.Println("n: ", n)
+			}
+			fmt.Println("Content:", string(buf))
+		}
+		f.Close()
+	*/
+
+	// 从偏移量读取
+	/*
+		f, _ := os.Open("test.txt")
+		buf := make([]byte, 10)
+		n, _ := f.ReadAt(buf, 3)
+		fmt.Println(n)
+		fmt.Println(string(buf))
+	*/
+
+	// 遍历读取目录
+	/*
+		de, _ := os.ReadDir("testDir")
+		for _, v := range de {
+			fmt.Println(v.IsDir()) // 判断是否为目录
+			fmt.Println(v.Name())  // 目录名
+		}
+	*/
+	
+	// 定位
+	f, _ := os.Open("test.txt")
+	f.Seek(3, 0)
+	buf := make([]byte, 10)
+	n, _ := f.Read(buf)
+	fmt.Println(n)
+	fmt.Println(string(buf))
+	f.Close()
+}
+func main() {
+	//openCloseFile()
+	//createFile()
+	readFile()
+}
+```
+
+- #### File文件写操作
+
+```go
+package main
+
+import "os"
+
+func write() {
+	// 字节写入
+	// os.RDWR 读写  os.O_APPEND 追加  os.O_TRUNC 覆盖
+	f, _ := os.OpenFile("test.txt", os.O_RDWR|os.O_TRUNC, 777)
+	f.Write([]byte("test"))
+	f.Close()
+}
+
+func writeString() {
+	// 字符串写入
+	f, _ := os.OpenFile("test.txt", os.O_RDWR|os.O_APPEND, 777)
+	f.WriteString("Hello World")
+	f.Close()
+}
+
+func writeAt() {
+	// 字节偏数组写入
+	f, _ := os.OpenFile("test.txt", os.O_RDWR, 777)
+	f.WriteAt([]byte("aaa"), 3)
+	f.Close()
+}
+
+func main() {
+	//write()
+	//writeString()
+	writeAt()
+}
+```
+
+- #### 进程相关操作
