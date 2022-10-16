@@ -3146,7 +3146,7 @@ func main() {
 }
 ```
 
-### os模块
+### os包/模块
   - os标准库实现了平台(操作系统)无关的编程接口
 
 - #### 文件目录相关
@@ -3379,3 +3379,330 @@ func main() {
 ```
 
 - #### 进程相关操作
+
+- #### 环境相关的方法
+```go
+package main
+
+import (
+	"fmt"
+	"os"
+)
+
+func main() {
+	// 获得所有环境变量
+	s := os.Environ()
+	fmt.Println(s)
+	// 获取某个环境变量
+	s2 := os.Getenv("GOPATH")
+	fmt.Println(s2)
+	// 设置环境变量
+	os.Setenv("env1", "env1")
+
+	// 查找
+	s3, b := os.LookupEnv("env1")
+	fmt.Println(s3) // env1
+	fmt.Println(b)  // true
+
+	// 替换
+	os.Setenv("NAME", "gopher")
+	os.Setenv("BURROW", "/usr/gopher")
+	fmt.Println(os.ExpandEnv("$NAME lives in ${BURROW}."))
+
+	// 清空环境变量
+	//os.Clearenv()
+}
+```
+
+### io包/模块
+  - io 为 IO原语(I/O primitives) 提供基本的接口
+  - io/ioutil 封装一些实用的I/O函数
+  - fmt实现格式I/O，类似C语言中的printf和scanf
+  - bufio 实现带缓存I/O
+
+### ioutil包(已经弃用)
+
+| 名称        | 作用                            |
+|-----------|-------------------------------|
+| ReadAll   | 读取数据，返回读到的字节slice             |
+| ReadDir   | 读取一个目录，返回目录入口数组[]os.FileInfo  |
+| ReadFile  | 读取一个文件，返回文件内容(字节silce)        |
+| WriteFile | 根据文件路径，写入字节slice              |
+| TempDir   | 在一个目录中创建指定前缀名的临时目录，返回新临时目录的路径 |
+| TempFile  | 在一个目录中创建指定前缀名的临时文件，返回os.File  |
+
+### bufio包
+  - 实现了有缓冲的I/O.它包装了一个io.Reader和io.Writer接口对象，创建另一个也实现了该接口，且同时还提供了缓冲和一些文本I/O的帮助函数的对象
+
+- #### bufio读相关操作
+```go
+package main
+
+import (
+  "bufio"
+  "fmt"
+  "os"
+  "strings"
+)
+
+func f1() {
+  //开启缓冲读取文件
+  f, _ := os.Open("test.txt")
+  defer f.Close()
+  r2 := bufio.NewReader(f) // 封装Reader
+  s, _ := r2.ReadString('\n')
+  fmt.Println(s)
+}
+
+func f2() {
+  // 开启缓冲读取字符串
+  r := strings.NewReader("Hello")
+  r2 := bufio.NewReader(r) // 封装Reader
+  s, _ := r2.ReadString('\n')
+  fmt.Println(s)
+}
+
+func f3() {
+  // 单个字节读取
+  r := strings.NewReader("Hello")
+  b := bufio.NewReader(r)
+
+  c, _ := b.ReadByte()
+  fmt.Printf("%c", c)
+  c, _ = b.ReadByte()
+  fmt.Printf("%c", c)
+  b.UnreadByte() // 释放字节
+  c, _ = b.ReadByte()
+  fmt.Printf("%c", c)
+}
+
+func f4() {
+  // 单行读取
+  s := strings.NewReader("ABC\nDEF\nGHI")
+  b := bufio.NewReader(s)
+
+  w, isPrefix, _ := b.ReadLine()
+  fmt.Printf("%q %v", w, isPrefix)
+  w, isPrefix, _ = b.ReadLine()
+  fmt.Printf("%q %v", w, isPrefix)
+}
+
+func f5() {
+  // 切片读取
+  s := strings.NewReader("ABC,DEF,GHI")
+  b := bufio.NewReader(s)
+
+  w, _ := b.ReadSlice(',')
+  fmt.Printf("%q", w)
+  w, _ = b.ReadSlice(',')
+  fmt.Printf("%q", w)
+}
+
+func main() {
+  f1()
+  f2()
+  f3()
+  f4()
+  f5()
+}
+```
+
+- #### bufio写相关操作
+
+```go
+package main
+
+import (
+	"bufio"
+	"os"
+)
+
+func main() {
+	f, _ := os.OpenFile("test.txt", os.O_RDWR, 0777)
+	w := bufio.NewWriter(f)
+	w.WriteString("hello world !!!!")
+	w.Flush() // 刷新缓冲区
+	defer f.Close()
+}
+```
+
+### log包/模块
+  - golang 内置了`log`包，实现简单的日志服务。通过调用`log`包的函数，可以实现简单的日志打印功能
+
+- #### log使用
+  - `log`包中有3个系列的日志打印函数，分别是`print`系列，`panic`系列，`fatal`系列
+
+| 函数系列  | 作用                                      |
+|-------|-----------------------------------------|
+| print | 单纯打印日志                                  |
+| panic | 打印日志，抛出panic异常                          |
+| fatal | 打印日志，强制结束程序(os.Exit(1), `defer`函数不会执行   |
+
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+)
+
+func f1() {
+	log.Print("test")
+	log.Printf("my log is %d", 100)
+	log.Println("tom, 11")
+}
+
+func f2() {
+	log.Print("----")
+	log.Panic("122")    // 抛出异常
+	log.Println("----") // 不会执行
+}
+
+func f3() {
+	defer fmt.Println("defer...") // 不会执行
+	log.Print("my log")
+	log.Fatal("fatal...")
+	fmt.Println("end...") // 不会执行
+}
+
+func main() {
+	//f1()
+	//f2()
+	f3()
+}
+```
+
+- #### log配置
+  - 标准log配置
+    - 默认情况下log只会打印出时间，但是实际情况下我们可能还需要获取文件名，行号等信息，`log`包提供给我们定制的接口
+    - `log`包提供了两个标准log配置的方法
+      - `func Flags() int` 返回标准log输出配置
+      - `func SetFlags(flag int)` 设置标准log输出配置
+```go
+package main
+
+import (
+	"fmt"
+	"log"
+	"os"
+)
+
+func main() {
+	i := log.Flags()
+	fmt.Println(i)
+	log.Print("test")
+}
+
+func init() {
+	log.SetFlags(log.Ldate | log.Ltime | log.Llongfile) // 设置输出内容
+	log.SetPrefix("My Log : ")                          // 设置输出前缀
+	f, err := os.OpenFile("test.txt", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0777)
+	if err != nil {
+		log.Fatal(err)
+	}
+	log.SetOutput(f) // 写入输出日志内容到文件
+}
+```
+
+- #### 自定义logger
+  - `log`包为我们提供了内置函数，让我们能自定义logger
+```go
+package main
+
+import (
+	"log"
+	"os"
+)
+
+var logger *log.Logger
+
+func main() {
+	logger.Print("test")
+}
+
+func init() {
+	f, err := os.OpenFile("test.txt", os.O_RDWR|os.O_APPEND|os.O_CREATE, 0777)
+	if err != nil {
+		log.Fatal(err)
+	}
+	logger = log.New(f, "Success : ", log.Llongfile|log.Ltime|log.Ldate)
+}
+```
+
+### builtin包/模块
+  - 这个包提供了一些类型声明，变量和常量声明，还有一些遍历函数，这个包不需要导入，这些变量和函数就可以直接使用
+
+- #### 常用函数
+```go
+package main
+
+import "fmt"
+
+func testAppend() {
+	var s = []int{1, 2, 3}
+	i := append(s, 100)
+	fmt.Println(i) // [1 2 3 100]
+
+	var s1 = []int{4, 5, 6}
+	i1 := append(s, s1...)
+	fmt.Println(i1) // [1 2 3 4 5 6]
+}
+
+func testLen() {
+	s := "hello world"
+	s1 := []int{1, 2, 3}
+	fmt.Println(len(s), len(s1)) // 11 3
+}
+
+func testPrint() {
+	name := "tom"
+	print(name)
+	println(name)
+}
+
+func main() {
+	testAppend()
+	testLen()
+	testPrint()
+}
+```
+
+- #### `new`和`make`
+  - `new`和`make`的区别
+    - `make`只能用来分配及初始化类型为`slice`, `map`, `chan` 的数据;`new`可以分配任意类型的数据
+    - `new`分配返回的是指针，即类型`*T`;`make`返回引用类型,即`T`
+    - `new`分配的空间被清零，`make`分配后，后进行初始化
+```go
+package main
+
+import "fmt"
+
+func testNew() {
+	b := new(bool)
+	fmt.Printf("%T ", b) // *bool
+	fmt.Println(*b)      // false
+	i := new(int)
+	fmt.Printf("%T ", i) // *int
+	fmt.Println(*i)      // 0
+	s := new(string)
+	fmt.Printf("%T ", s) // *string
+	fmt.Println(*s)      //
+}
+
+func testMake() {
+	i := make([]int, 10, 100) // 10是长度， 100是容量
+	fmt.Println(i)            // [0 0 0 0 0 0 0 0 0 0]
+	s := make([]string, 10, 100)
+	fmt.Println(s) // [         ]
+	b := make([]bool, 10, 100)
+	fmt.Println(b) // [false false false false false false false false false false]
+}
+
+func main() {
+	testNew()
+	testMake()
+}
+```
+
+### bytes包/模块
+  - bytes提供了对字节切片进行读写操作的一系列函数，字节切片处理的函数比较多分为基本处理函数，比较函数，后缀检查函数，索引函数，分割函数，大小写处理函数和子切片处理函数等
