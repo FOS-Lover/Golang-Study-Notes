@@ -1,4 +1,0 @@
-My Log : 2022/10/16 19:05:05 E:/Golang Note/test/test.go:12: test
-My Log : 2022/10/16 19:05:11 E:/Golang Note/test/test.go:12: test
-Success2022/10/16 19:10:01 E:/Golang Note/test/test.go:11: test
-Success : 2022/10/16 19:10:15 E:/Golang Note/test/test.go:11: test
