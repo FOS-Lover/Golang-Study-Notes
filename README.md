@@ -1,7 +1,7 @@
 # Golang Study Note
 
 - 采用 <a href="https://github.com/FOS-Lover/Golang-Study-Notes/blob/master/LICENSE">MIT</a> 协议
-- 更新于 : 2022年10月16日
+- 更新于 : 2022年10月18日
 - 不足地方或错误地方欢迎fork提交
 
 ### 常用命令
@@ -3704,7 +3704,7 @@ func main() {
 }
 ```
 
-### bytes包/模块
+### bytes常用函数
   - bytes提供了对字节切片进行读写操作的一系列函数，字节切片处理的函数比较多分为基本处理函数，比较函数，后缀检查函数，索引函数，分割函数，大小写处理函数和子切片处理函数等
 ```go
 package main
@@ -3799,5 +3799,420 @@ func main() {
 	f5()
 	f6()
 	f7()
+}
+```
+
+- #### bytes Reader类型
+  - Reader实现了`io.Reader` `io.ReaderAt` `io.WriterTo` `io.Seeker` `io.ByteScanner` `io.RuneScanner`接口，Reader是只读的，可以seek
+
+- #### bytes Buffer类型
+  - 缓冲区是具有读取和写入方法的可变大小的字节缓冲区。Buffer的零值是准备使用的空缓冲区
+  - 四种声明buffer
+  - ```go
+    var b bytes.Buffer // 直接定义一个Buffer变量，不用初始化，可以直接使用
+    b := new(bytes.Buffer) // 使用New返回Buffer变量 
+    b := bytes.NewBuffer(s []byte) // 从一个字节切片，构造一个Buffer
+    b := bytes.NewBufferString(s string) // 从一个string变量，构造一个Buffer
+```go
+package main
+
+import (
+	"bytes"
+	"fmt"
+)
+
+func testBuffer() {
+	var b bytes.Buffer
+	fmt.Println(b) // {[] 0 0}
+	var b1 = bytes.NewBufferString("test")
+	fmt.Println(b1) // test
+	var b2 = bytes.NewBuffer([]byte("test"))
+	fmt.Println(b2) // test
+}
+
+func testBufferWrite() {
+	var b bytes.Buffer
+	n, _ := b.WriteString("test")
+	fmt.Println(n)                 // 4
+	fmt.Println(string(b.Bytes())) // test
+}
+
+func testBufferRead() {
+	var b = bytes.NewBufferString("test")
+	b1 := make([]byte, 2)
+	n, _ := b.Read(b1)
+	fmt.Println(n)          // 2
+	fmt.Println(string(b1)) // te
+}
+
+func main() {
+	testBuffer()
+	testBufferWrite()
+	testBufferRead()
+}
+```
+
+### errors包/模块
+  - errors包实现了操作错误的函数。语言使用error类型来返回函数执行过程中遇到的错误，如果返回的error值为nil，则表示未遇到错误，否则error会返回一个字符串，用于说明错误内容
+  - #### error结构
+  - ```go
+    type error interface {
+      Error() string
+    }
+  - 可以使用任何类型去实现它（只要添加一个Error()方法即可）,也就是说，error可以是任意类型，这意味着，函数返回的error值实际可以包含任意信息，不一定是字符串
+  - error不一定表示一个错误，它可以表示任何信息，比如io包中就用error类型的`io.EOF`表示数据读取结束，而不是遇到了什么错误
+  - errors包实现了一个最简单的error类型，只包含一个字符串，它可以记录大多数情况下遇到的错误信息。errors包的用法也很简单，只有一个`new`函数，用于生成最简单的error对象
+```go
+package main
+
+import (
+	"errors"
+	"fmt"
+)
+
+func check(s string) (string, error) {
+	if s == "" {
+		return s, errors.New("字符串不能为空")
+	}
+	return s, nil
+}
+
+func main() {
+	str, err := check("")
+	fmt.Println(str, err)
+}
+```
+
+### sort包/模块
+  - sort包提供了排序切片和用户自定义数据集以及相关功能的函数
+  - sort包主要针对`[]int` `[]float64` `[]string`，以及其他自定义切片的排序
+```go
+package main
+
+import (
+	"fmt"
+	"sort"
+)
+
+func main() {
+	// []int
+	i := []int{2, 5, 3, 1}
+	sort.Ints(i)               // 正序
+	fmt.Println(i)             // [1 2 3 5]
+	b := sort.IntsAreSorted(i) // 是否排过序
+	fmt.Println(b)             // true
+
+	// []float64
+	f := []float64{1.2, 1.1, 22.2, 0.2}
+	sort.Float64s(f)
+	fmt.Println(f) // [0.2 1.1 1.2 22.2]
+
+	// []string
+	// string排序按字符集排序
+	si := []string{"123", "1234", "12"}
+	sort.Strings(si)
+	fmt.Println(si) // [12 123 1234]
+
+	sz := []string{"中", "文", "我", "会"}
+	sort.Strings(sz)
+	fmt.Println(sz) // [中 会 我 文]
+}
+```
+
+- #### 自由切片排序
+```go
+package main
+
+import (
+	"fmt"
+	"sort"
+)
+
+type Person struct {
+	Name string
+	Age  int
+}
+
+type testSlice []Person
+
+func (receiver testSlice) Len() int {
+	return len(receiver)
+}
+
+func (receiver testSlice) Swap(i, j int) {
+	receiver[i], receiver[j] = receiver[j], receiver[i]
+}
+func (receiver testSlice) Less(i, j int) bool {
+	return receiver[i].Age < receiver[j].Age
+}
+
+func main() {
+	ls := testSlice{
+		{Name: "tom", Age: 18},
+		{Name: "tom", Age: 20},
+		{Name: "tom", Age: 17},
+	}
+	fmt.Println(ls)
+	sort.Sort(ls)
+	fmt.Println(ls)
+	fmt.Printf("%T %T", testSlice{}, Person{})
+}
+```
+
+### time包/模块
+  - time包提供了测量和显示时间的功能
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	now := time.Now()
+	fmt.Printf("%T ", now)	// time.Time
+	fmt.Println(now)
+
+	year := now.Year() // 年
+	fmt.Println(year)
+
+	month := now.Month() // 月
+	fmt.Println(month)
+
+	day := now.Day() // 日
+	fmt.Println(day)
+
+	hour := now.Hour() // 时
+	fmt.Println(hour)
+
+	minute := now.Minute() // 分
+	fmt.Println(minute)
+
+	second := now.Second() // 秒
+	fmt.Println(second)
+
+	fmt.Printf("%v-%v-%v %v:%v:%v\n", year, month, day, hour, minute, second)
+	fmt.Printf("%T %T %T %T %T %T\n", year, month, day, hour, minute, second) // int time.Month int int int int
+}
+```
+
+- #### 时间戳
+  - 在编程中对于时间戳的应用尤为广泛，例如在Web开发中做cookies有效期，接口加密，Redis中的key有效期等，大部分都用到了时间戳
+  - 时间戳时自1970年1月1日(08:00:00GMT)至当前时间的总毫秒数。也被称为Unix时间戳
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	now := time.Now()
+	// 时间戳
+	fmt.Printf("%T %v\n", now.Unix(), now.Unix())
+	// 纳秒级时间戳
+	fmt.Printf("%T %v\n", now.UnixNano(), now.UnixNano())
+
+	// 时间戳转换为普通的时间格式
+	timestamp := time.Now().Unix()
+	timeObj := time.Unix(timestamp, 0)
+	fmt.Println(timeObj) // 当前时间
+}
+```
+
+- #### 时间格式化
+  - 时间类型有一个自带的方法`Format`进行格式化，需要注意的是Go语言中格式化时间模板不是常见的`Y-m-d HH:MM:SS`而是使用Go诞生时间2006年1月2日15点04分05秒 (记忆口诀为 2006 1 2 3 4)
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	now := time.Now()
+	// 格式化的模板为Go的出生时间2006年1月2日15点04分05秒 Mon Jan
+	// 24小时制
+	fmt.Println(now.Format("2006-01-02 15:04:05.000 Mon Jan"))
+	// 12小时制
+	fmt.Println(now.Format("2006-01-02 03:04:05.000 PM Mon Jan"))
+
+	fmt.Println(now.Format("2006-01-02 03:04"))
+	fmt.Println(now.Format("2006-01-02 15:04"))
+	fmt.Println(now.Format("03:04 2006/01/02"))
+	fmt.Println(now.Format("15:04 2006/01/02"))
+	fmt.Println(now.Format("2006/01/02"))
+}
+```
+
+- #### 解析字符串格式的时间
+```go
+package main
+
+import (
+	"fmt"
+	"time"
+)
+
+func main() {
+	now := time.Now()
+	fmt.Println(now)
+
+	// 加载时区
+	loc, err := time.LoadLocation("Asia/Shanghai")
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	// 按照指定时区和指定格式解析字符串时间
+	timeObj, err := time.ParseInLocation("2006/01/02 15:04:05", "2020/08/04 14:15:20", loc)
+	if err != nil {
+		fmt.Println(err)
+		return
+	}
+	fmt.Println(timeObj)
+	fmt.Println(timeObj.Year())
+}
+```
+
+### json包/模块
+  - 这个包实现json的编码和解码，就是将json字符串转换为struct，或者将struct转换为json
+  - 核心的两个函数
+  - ```go
+    func Marshal(v interface{}) ([]byte, error) // 将struct编码成json，可以接收任意类型
+    func Unmarshal(data []byte, v interface{}) error // 将json转码为struct结构体
+  - 核心的两个结构体
+  - ```go
+    type Decoder struct {} // 从输入流读取并解析json
+    type Encoder struct {} // 写json到输入流
+```go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+)
+
+type Person struct {
+	Name  string
+	Age   int
+	Email string
+}
+
+func f1() {
+	p := Person{
+		Name:  "tom",
+		Age:   20,
+		Email: "tom@tom.com",
+	}
+	b, _ := json.Marshal(p)
+	fmt.Println(string(b)) // {"Name":"tom","Age":20,"Email":"tom@tom.com"}
+}
+
+func f2() {
+	b := []byte(`{"Name":"tom","Age":20,"Email":"tom@tom.com"}`)
+	var p Person
+	err := json.Unmarshal(b, &p)
+	fmt.Println(err)
+	fmt.Println(p)
+}
+
+func main() {
+	f1()
+	f2()
+}
+```
+
+- #### 解析嵌套指针类型和嵌套引用类型
+```go
+package main
+
+import (
+	"encoding/json"
+	"fmt"
+	"log"
+	"os"
+)
+
+// 解析嵌套指针类型
+func f1() {
+	b := []byte(`{"Name":"tom","Age":20,"Email":"tom@tom.com", "Parents":["tom","kite"]}`)
+	var f interface{}
+	json.Unmarshal(b, &f)
+	fmt.Println(f)      // map[Age:20 Email:tom@tom.com Name:tom Parents:[tom kite]]
+	fmt.Printf("%T", f) // map[string]interface {}Name tom
+	for k, v := range f.(map[string]interface{}) {
+		fmt.Println(k, v)
+	}
+}
+
+// 解析嵌套引用类型
+func f2() {
+	type Person struct {
+		Name   string
+		Age    int
+		Email  string
+		Parent []string
+	}
+	p := Person{
+		Name:   "tom",
+		Age:    20,
+		Email:  "tom@tom.com",
+		Parent: []string{"big tom", "big kite"},
+	}
+	b, _ := json.Marshal(p)
+	fmt.Println(string(b))
+}
+
+func f3() {
+	// 读取json文件
+	f, _ := os.Open("test.json")
+	defer f.Close()
+	dec := json.NewDecoder(f)
+
+	fmt.Println(dec, "\n")
+	fmt.Printf("%T \n", dec)
+
+	for {
+		var v map[string]interface{}
+
+		err := dec.Decode(&v)
+		if err != nil {
+			log.Println("Decoder:", err)
+			return
+		} else {
+			fmt.Println("Decoder:", v)
+		}
+	}
+}
+
+func f4() {
+	// 写入json文件
+	type Person struct {
+		Name   string
+		Age    int
+		Email  string
+		Parent []string
+	}
+	p := Person{
+		Name:   "tom",
+		Age:    20,
+		Email:  "tom@tom.com",
+		Parent: []string{"big tom", "big kite"},
+	}
+	f, _ := os.OpenFile("test.json", os.O_RDWR, 0777)
+	defer f.Close()
+	enc := json.NewEncoder(f)
+	err := enc.Encode(p)
+	fmt.Println(err)
+}
+func main() {
+	//f1()
+	//f2()
+	//f3()
+	f4()
 }
 ```
