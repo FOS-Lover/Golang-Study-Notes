@@ -1,7 +1,7 @@
 # Golang Study Note
 
 - 采用 <a href="https://github.com/FOS-Lover/Golang-Study-Notes/blob/master/LICENSE">MIT</a> 协议
-- 更新于 : 2022年10月18日
+- 更新于 : 2022年10月20日
 - 不足地方或错误地方欢迎fork提交
 
 ### 常用命令
@@ -4078,7 +4078,7 @@ func main() {
 }
 ```
 
-### json包/模块
+### encoding/json 包/模块
   - 这个包实现json的编码和解码，就是将json字符串转换为struct，或者将struct转换为json
   - 核心的两个函数
   - ```go
@@ -4214,5 +4214,181 @@ func main() {
 	//f2()
 	//f3()
 	f4()
+}
+```
+
+### encoding/xml 包/模块
+  - xml包实现xml解析
+    - 核心的两个函数
+    - ```go
+        func Marshal(v interface{}) ([]byte, error) // 将struct编码成xml，可以接收任意类型
+        func Unmarshal(data []byte, v interface{}) error // 将xml转码为struct结构体
+    - 核心的两个结构体
+    - ```go
+        type Decoder struct {} // 从输入流读取并解析xml
+        type Encoder struct {} // 写xml到输入流
+```go
+package main
+
+import (
+	"encoding/xml"
+	"fmt"
+	"io/ioutil"
+	"os"
+)
+
+type Person struct {
+	XMLName xml.Name `xml:"person"`
+	Name    string   `xml:"name"`
+	Age     int      `xml:"age"`
+	Email   string   `xml:"email"`
+}
+
+func f1() {
+	// 结构体转换为xml
+	person := Person{
+		Name:  "tom",
+		Age:   20,
+		Email: "tom@tom.com",
+	}
+	b, _ := xml.Marshal(person)
+	fmt.Println(string(b))
+	b, _ = xml.MarshalIndent(person, " ", " ")
+	fmt.Println(string(b))
+}
+
+func f2() {
+	// 将xml转换为结构体
+	s := `
+ <person>                   
+  <name>tom</name>          
+  <age>20</age>             
+  <email>tom@tom.com</email>
+ </person> 
+ `
+	b := []byte(s)
+	var per Person
+	xml.Unmarshal(b, &per)
+	fmt.Println(per)
+	fmt.Printf("%T", per)
+}
+
+func f3() {
+	// 读取xml文件
+	b, _ := ioutil.ReadFile("test.xml")
+	var per Person
+	xml.Unmarshal(b, &per)
+	fmt.Println(per)
+}
+
+func f4() {
+	// 写入xml文件
+	p := Person{
+		Name:  "tom",
+		Age:   20,
+		Email: "tom@tom.com",
+	}
+	f, _ := os.OpenFile("test.xml", os.O_RDWR, 0777)
+	defer f.Close()
+	e := xml.NewEncoder(f)
+	e.Encode(p)
+}
+
+func main() {
+	//f1()
+	//f2()
+	//f3()
+	f4()
+}
+```
+
+### math 包/模块
+  - 该包包含一些常量和一些有用的数学计算函数，例如: 三角函数，随机数，绝对值，平方根等
+```go
+package main
+
+import (
+	"fmt"
+	"math"
+)
+
+func f1() {
+	// 常量
+	fmt.Printf("float64的最大值: %v \n", math.MaxFloat64)
+	fmt.Printf("float64的最小值: %v \n", math.SmallestNonzeroFloat64)
+	fmt.Printf("float32的最大值: %v \n", math.MaxFloat32)
+	fmt.Printf("float32的最小值: %v \n", math.SmallestNonzeroFloat32)
+	fmt.Printf("int8的最大值: %v \n", math.MaxInt8)
+	fmt.Printf("int8的最小值: %v \n", math.MinInt8)
+	fmt.Printf("uint8的最大值: %v \n", math.MaxUint8)
+	fmt.Printf("int16的最大值: %v \n", math.MaxInt16)
+	fmt.Printf("int16的最小值: %v \n", math.MinInt16)
+	fmt.Printf("uint16的最大值: %v \n", math.MaxUint16)
+	fmt.Printf("int32的最大值: %v \n", math.MaxInt32)
+	fmt.Printf("int32的最小值: %v \n", math.MinInt32)
+	fmt.Printf("uint32的最大值: %v \n", math.MaxUint32)
+	fmt.Printf("int64的最大值: %v \n", math.MaxInt64)
+	fmt.Printf("int64的最小值: %v \n", math.MinInt64)
+	fmt.Printf("圆周率默认为: %.200f \n", math.Pi)
+}
+
+func f2() {
+	// 绝对值
+	fmt.Printf("[-3.14]的绝对值: %.2f\n", math.Abs(-3.14))
+	// x的y次平方
+	fmt.Printf("[2]的16次平方: %.f\n", math.Pow(2, 16))
+	// 取余数
+	fmt.Printf("10的[3]次方: %.f\n", math.Pow10(3))
+	// 取x的开平方
+	fmt.Printf("[64]的开平方: %.f\n", math.Sqrt(64))
+	// 取x的开立方
+	fmt.Printf("[64]的开立方: %.f\n", math.Cbrt(27))
+	// 向上取整
+	fmt.Printf("[3.14]向上取整: %.f\n", math.Ceil(3.14))
+	// 向下取整
+	fmt.Printf("[3.14]向下取整: %.f\n", math.Floor(3.9))
+	// 取余数
+	fmt.Printf("[10/3]的余数: %.f\n", math.Mod(10, 3))
+	// 取余的整数和小数
+	Integer, Decimal := math.Modf(3.14159265358979)
+	fmt.Printf("[3.14159265358979]的整数为: %.f , 小数为: %.14f", Integer, Decimal)
+}
+
+func main() {
+	//f1()
+	f2()
+}
+```
+
+- #### 随机数 math/rand
+```go
+package main
+
+import (
+	"fmt"
+	"math/rand"
+	"time"
+)
+
+func main() {
+	fmt.Printf("%d", rand.Int)
+	for i := 0; i < 10; i++ {
+		a := rand.Int() // 随机数
+		fmt.Printf("%d\n", a)
+	}
+	fmt.Println("------------")
+	for i := 0; i < 10; i++ {
+		a := rand.Intn(100) // 一百以内的随机数
+		fmt.Printf("%d\n", a)
+	}
+	fmt.Println("------------")
+	for i := 0; i < 10; i++ {
+		a := rand.Float32() // 小数的随机数
+		fmt.Println(a)
+	}
+}
+
+func init() {
+	rand.Seed(time.Now().UnixNano()) // 以时间作为初始化种子
 }
 ```
