@@ -4392,3 +4392,866 @@ func init() {
 	rand.Seed(time.Now().UnixNano()) // 以时间作为初始化种子
 }
 ```
+
+### 操作MySQL数据库
+
+- #### 准备数据库
+  - 下载MySQL
+  - 创建数据库
+  - 创建数据库表
+  - 添加模拟数据
+
+- #### 安装配置mysql驱动
+  - 安装mysql
+  - `go get -u github.com/go-sql-driver/mysql`
+  - ```go
+    import (
+	      "database/sql"
+	      _ "github.com/go-sql-driver/mysql"
+	      "time"
+    )
+
+- #### 数据库连接
+```go
+package main
+
+import (
+	"database/sql"
+	"fmt"
+	_ "github.com/go-sql-driver/mysql"
+)
+
+var db *sql.DB
+
+// 初始化数据库函数
+func initDB() (err error) {
+	dsn := "root:admin@tcp(127.0.0.1:3306)/go_db?charset=utf8mb4&parseTime=True"
+	// 不会校验账号密码是否正确
+	db, err = sql.Open("mysql", dsn)
+	if err != nil {
+		return err
+	}
+	// 尝试与数据库建立连接（校验dsn是否正确）
+	err = db.Ping()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func main() {
+	/*	db, err := sql.Open("mysql", "root:admin@/go_db")
+		if err != nil {
+			panic(err)
+		}
+
+		// 最大连接时长
+		db.SetConnMaxLifetime(time.Minute * 3)
+		// 最大连接数
+		db.SetMaxOpenConns(10)
+		// 空闲连接数
+		db.SetMaxIdleConns(10)
+		fmt.Println(db)*/
+
+	err := initDB()
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("连接成功")
+	}
+}
+```
+
+- #### 插入数据
+  - 插入，更新和删除都用`Exec`方法
+```go
+package main
+
+import (
+	"database/sql"
+	"fmt"
+	_ "github.com/go-sql-driver/mysql"
+)
+
+var db *sql.DB
+
+// 初始化数据库函数
+func initDB() (err error) {
+	dsn := "root:admin@tcp(127.0.0.1:3306)/go_db?charset=utf8mb4&parseTime=True"
+	// 不会校验账号密码是否正确
+	db, err = sql.Open("mysql", dsn)
+	if err != nil {
+		return err
+	}
+	// 尝试与数据库建立连接（校验dsn是否正确）
+	err = db.Ping()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func insert() {
+	// 插入
+	s := "insert into user_tbl(username, password) values (?,?)"
+	exec, err := db.Exec(s, "Jack", "jack123")
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		id, err := exec.LastInsertId()
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			fmt.Println(id)
+		}
+	}
+}
+
+func insert2(username string, password string) {
+	// 插入2
+	s := "insert into user_tbl(username, password) values (?,?)"
+	exec, err := db.Exec(s, username, password)
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		id, err := exec.LastInsertId()
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			fmt.Println(id)
+		}
+	}
+}
+
+func main() {
+	err := initDB()
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("连接成功")
+	}
+	insert()
+	insert2("Losa", "adminLosa")
+}
+```
+
+- #### 查询操作
+  - 单行查询`db.QueryRow()`执行一次查询，并期望返回最多一行结果(即Row)。QueryRow总是返回非nil的值，直到返回值的Scan方法被调用时，才会返回被延迟的错误
+```go
+package main
+
+import (
+	"database/sql"
+	"fmt"
+	_ "github.com/go-sql-driver/mysql"
+)
+
+var db *sql.DB
+
+// 初始化数据库函数
+func initDB() (err error) {
+	dsn := "root:admin@tcp(127.0.0.1:3306)/go_db?charset=utf8mb4&parseTime=True"
+	// 不会校验账号密码是否正确
+	db, err = sql.Open("mysql", dsn)
+	if err != nil {
+		return err
+	}
+	// 尝试与数据库建立连接（校验dsn是否正确）
+	err = db.Ping()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type User struct {
+	id       int
+	username string
+	password string
+}
+
+// 查询单条
+func queryOneRow() {
+	s := "select * from user_tbl where id = ?"
+	var u User
+	err := db.QueryRow(s, 1).Scan(&u.id, &u.username, &u.password)
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println(u)
+	}
+}
+
+// 查询多条
+func queryManyRow() {
+	s := "select * from user_tbl"
+	query, err := db.Query(s)
+	defer query.Close()
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		for query.Next() {
+			var u User
+			err := query.Scan(&u.id, &u.username, &u.password)
+			if err != nil {
+				fmt.Println(err)
+			} else {
+				fmt.Println(u)
+			}
+		}
+	}
+}
+
+func main() {
+	err := initDB()
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("连接成功")
+	}
+	queryOneRow()
+	queryManyRow()
+}
+```
+
+- #### 更新数据 
+  - 插入，更新和删除操作都是`Exec`方法
+```go
+package main
+
+import (
+	"database/sql"
+	"fmt"
+	_ "github.com/go-sql-driver/mysql"
+)
+
+var db *sql.DB
+
+// 初始化数据库函数
+func initDB() (err error) {
+	dsn := "root:admin@tcp(127.0.0.1:3306)/go_db?charset=utf8mb4&parseTime=True"
+	// 不会校验账号密码是否正确
+	db, err = sql.Open("mysql", dsn)
+	if err != nil {
+		return err
+	}
+	// 尝试与数据库建立连接（校验dsn是否正确）
+	err = db.Ping()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func update() {
+	s := "update user_tbl set username=?,password=? where id=?"
+	exec, err := db.Exec(s, "tom", "12345", 1)
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		affected, err := exec.RowsAffected()
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			fmt.Println(affected)
+		}
+	}
+}
+
+func main() {
+	err := initDB()
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("连接成功")
+	}
+	update()
+}
+```
+
+- #### 删除数据 
+  - 插入，更新和删除操作都是`Exec`方法
+```go
+package main
+
+import (
+	"database/sql"
+	"fmt"
+	_ "github.com/go-sql-driver/mysql"
+)
+
+var db *sql.DB
+
+// 初始化数据库函数
+func initDB() (err error) {
+	dsn := "root:admin@tcp(127.0.0.1:3306)/go_db?charset=utf8mb4&parseTime=True"
+	// 不会校验账号密码是否正确
+	db, err = sql.Open("mysql", dsn)
+	if err != nil {
+		return err
+	}
+	// 尝试与数据库建立连接（校验dsn是否正确）
+	err = db.Ping()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func delete(id int) {
+	s := "delete from user_tbl where id=?"
+	exec, err := db.Exec(s, id)
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		affected, err := exec.RowsAffected()
+		if err != nil {
+			fmt.Println(err)
+		} else {
+			fmt.Println(affected)
+		}
+	}
+}
+
+func main() {
+	err := initDB()
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		fmt.Println("连接成功")
+	}
+	delete(1)
+}
+```
+
+### gorm
+
+- #### ORM简介
+  - 对象关系映射(Object Relational Mapping, 简称ORM) 模式是一种为了解决面向对象与关系数据库（如MySQL数据库）存在的互不匹配的现象的技术。简单的说，ORM是通过使用描述对象和数据库之间映射的元数据，将程序中的对象自动持久化到关系数据库中
+  - 安装
+  - `go get -u gorm.io/gorm`
+  - `go get -u gorm.io/driver/mysql`
+```go
+package main
+
+import (
+	"fmt"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+)
+
+type Product struct {
+	gorm.Model
+	Code  string
+	Price uint
+}
+
+// 创建表
+func CreateTable(db *gorm.DB) {
+	db.AutoMigrate(&Product{})
+}
+
+// 插入数据
+func InsertData(db *gorm.DB) {
+	p := Product{
+		Code:  "200",
+		Price: 100,
+	}
+	db.Create(&p)
+}
+
+// 查询
+func find(db *gorm.DB) {
+	var p Product
+	db.First(&p, 1)                 // 根据主键查询
+	db.First(&p, "code = ?", "200") // 查询code字段值为200的记录
+	fmt.Println(p)
+}
+
+// 更新
+func update(db *gorm.DB) {
+	var p Product
+
+	// 更新单个字段
+	db.First(&p, 1)
+	db.Model(&p).Update("Price", 200) // 字段值更新
+	//db.First(&p, 1).Model(&p).Update("Price", 1000)
+
+	// 更新多个字段
+	db.First(&p, 1).Model(&p).Updates(Product{Price: 1200, Code: "test"}) // 仅更新非零值字段
+	db.First(&p).Updates(map[string]interface{}{"Price": 2000, "Code": "TEST"})
+}
+
+func delete(db *gorm.DB) {
+	var p Product
+	db.First(&p, 1)
+	db.Delete(&p, 1)
+}
+
+func main() {
+	dsn := "root:admin@tcp(127.0.0.1:3306)/golang_db?charset=utf8mb4&parseTime=True&loc=Local"
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	if err != nil {
+		panic("failed to connect database;")
+	}
+	//CreateTable(db)
+	//InsertData(db)
+	//find(db)
+	//update(db)
+	delete(db)
+}
+```
+
+- #### gorm声明模型
+  - 模型是标准的struct，由Go的基本数据类型，实现了Scanner和Valuer接口的自定义类型及其指针或别名组成
+```go
+package main
+
+import (
+  "gorm.io/driver/mysql"
+  "gorm.io/gorm"
+)
+
+type Product struct {
+  gorm.Model
+  Code  string
+  Price uint
+}
+```
+
+- #### gorm连接数据库
+
+```go
+package main
+
+import (
+  "gorm.io/driver/mysql"
+  "gorm.io/gorm"
+)
+
+func main() {
+	dsn := "root:admin@tcp(127.0.0.1:3306)/golang_db"
+    db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+}
+```
+
+- #### 配置驱动
+
+```go
+package main
+
+import (
+	"fmt"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+)
+
+func main() {
+	dsn := "root:admin@tcp(127.0.0.1:3306)/golang_db?charset=utf8mb4&parseTime=True&loc=Local"
+	db, err := gorm.Open(mysql.New(mysql.Config{
+		DSN:                       dsn,   //
+		DefaultStringSize:         256,   // string类型字段的默认长度
+		DisableDatetimePrecision:  true,  // 是否禁用datetime精度，MySQL 5.6之前的数据库不支持
+		DontSupportRenameIndex:    true,  // 重命名索引时采用删除并新建的方式，MySQL 5.7之前的数据库和 Maria DB不支持重命名列
+		DontSupportRenameColumn:   true,  // 用`change`重命名列，MySQL8之前的数据库和Maria DB不支持重命名列
+		SkipInitializeWithVersion: false, // 根据当前MySQL版本自动配置
+	}), &gorm.Config{})
+	if err != nil {
+		panic("failed to connect database;")
+	}
+	fmt.Println(db)
+}
+```
+
+- #### 自定义驱动
+```go
+package main
+
+import (
+	"fmt"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	_ "example.com/driver"
+)
+
+func main() {
+	dsn := "root:admin@tcp(127.0.0.1:3306)/golang_db?charset=utf8mb4&parseTime=True&loc=Local"
+	db, err := gorm.Open(mysql.New(mysql.Config{
+		DriverName: "driver",
+		DSN:dsn,   // 数据源
+	}), &gorm.Config{})
+	if err != nil {
+		panic("failed to connect database;")
+	}
+	fmt.Println(db)
+}
+```
+
+- #### 连接池
+```go
+package main
+
+import (
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"time"
+)
+
+func main() {
+	dsn := "root:admin@tcp(127.0.0.1:3306)/golang_db?charset=utf8mb4&parseTime=True&loc=Local"
+	db, err := gorm.Open(mysql.New(mysql.Config{
+		DriverName: "driver",
+		DSN:        dsn, // 数据源
+	}), &gorm.Config{})
+	if err != nil {
+		panic("failed to connect database;")
+	}
+	// 设置连接池
+	sqlDB, err := db.DB()
+	// 设置空闲连接池中连接的最大数量
+	sqlDB.SetMaxIdleConns(10)
+	// 设置打开数据库连接的最大数量
+	sqlDB.SetMaxOpenConns(100)
+	// 设置了连接可复用的最大时间
+	sqlDB.SetConnMaxLifetime(time.Hour)
+}
+```
+
+- #### 创建记录
+
+```go
+package main
+
+import (
+	"fmt"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"time"
+)
+
+var DB *gorm.DB
+
+type User struct {
+	gorm.Model
+	Name     string
+	Age      int
+	Birthday time.Time
+}
+
+var user = User{
+	Name:     "tom",
+	Age:      20,
+	Birthday: time.Now(),
+}
+
+// 建表
+func createTable() {
+	DB.AutoMigrate(&User{})
+}
+
+func insert1() {
+	// 插入整条记录
+	tx := DB.Create(&user)
+	fmt.Println(tx)
+	fmt.Println(tx.RowsAffected)
+	fmt.Println(user.ID)
+}
+
+func insert2() {
+	// 插入指定字段记录
+	DB.Select("Name", "Age", "CreatedAt").Create(&user)
+}
+
+func insert3() {
+	// 批量插入多条记录
+	var users = []User{{Name: "test1", Birthday: time.Now()}, {Name: "test2", Birthday: time.Now()}, {Name: "test3", Birthday: time.Now()}}
+	DB.Create(&users)
+}
+
+// 创建钩子
+func (u *User) BeforeCreate(tx *gorm.DB) (err error) {
+	fmt.Println("beforecreate..")
+	return err
+}
+
+// 根据map插入记录
+func insert4() {
+	DB.Model(&User{}).Create(map[string]interface{}{
+		"Name": "test4",
+		"Age":  22,
+	})
+}
+
+func main() {
+	//createTable()
+	//insert1()
+	//insert2()
+	//insert3()
+	insert4()
+}
+
+func init() {
+	dsn := "root:admin@tcp(127.0.0.1:3306)/golang_db?charset=utf8mb4&parseTime=True&loc=Local"
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	if err != nil {
+		panic("failed to connect database;")
+	}
+	DB = db
+}
+```
+
+- #### 查询记录
+  - gorm提供了`First` `Take` `Last`方法，以便从数据库中检索单个对象。当查询数据库时它添加了`LIMIT1`条件，且没有找到记录时，它会返回`ErrRecordNotFound`错误
+```go
+package main
+
+import (
+	"fmt"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"time"
+)
+
+type User struct {
+	gorm.Model
+	Name     string
+	Age      int
+	Birthday time.Time
+}
+
+var DB *gorm.DB
+
+func select1() {
+	var user User
+	// 获取第一条记录(主键升序)
+	DB.First(&user)
+	fmt.Println(user)
+
+	// 获取一条记录，没有指定排序字段
+	DB.Take(&user)
+	fmt.Println(user)
+
+	// 获取最后一条记录(主键降序)
+	DB.Last(&user)
+	fmt.Println(user)
+}
+
+func select2() {
+	// 根据id主键查询
+	var user User
+	DB.First(&user, 2)
+	fmt.Println(user)
+
+	// 根据切片主键查询
+	var users []User
+	DB.Find(&users, []int{1, 2, 3})
+	for _, u := range users {
+		fmt.Println(u)
+	}
+}
+
+func select3() {
+	var users []User
+	tx := DB.Find(&users)
+	fmt.Println(tx.RowsAffected)	// 查了几条记录
+}
+
+func main() {
+	//select1()
+	//select2()
+	select3()
+}
+
+func init() {
+	dsn := "root:admin@tcp(127.0.0.1:3306)/golang_db?charset=utf8mb4&parseTime=True&loc=Local"
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{})
+	if err != nil {
+		panic("failed to connect database;")
+	}
+	DB = db
+}
+```
+
+- #### 更新记录
+  - `Save`会保存所有的字段，即使字段是零值
+```go
+package main
+
+import (
+	"fmt"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+	"log"
+	"time"
+)
+
+type User struct {
+	gorm.Model
+	Name     string
+	Age      int
+	Birthday time.Time
+	Active   bool
+}
+
+var DB *gorm.DB
+
+func createTable() {
+	DB.AutoMigrate(&User{})
+}
+
+func insert() {
+	user := User{
+		Name:     "tom",
+		Age:      23,
+		Birthday: time.Now(),
+		Active:   true,
+	}
+	DB.Create(&user)
+}
+
+func update1() {
+	var user User
+	DB.First(&user) // id = 1
+	user.Name = "testTom"
+	user.Age = 30
+	DB.Save(&user) // 更新
+}
+
+func update2() {
+	// 更新单个列
+	//DB.Model(&User{}).Where("active = ?", true).Update("name", "hello")
+
+	/*
+		var user User
+		DB.First(&user)
+		DB.Model(&user).Update("name", "test")
+	*/
+}
+
+func update3() {
+	// 更新多个列
+	var user User
+	DB.First(&user) // id = 1
+	//DB.Model(&user).Updates(User{Name: "testHello", Age: 20, Active: false})
+	DB.Model(&user).Updates(map[string]interface{}{
+		"name":   "hello",
+		"age":    10,
+		"active": false,
+	}) // 根据map更新
+}
+
+func update4() {
+	// 更新选定字段
+	var user User
+	DB.First(&user) // id = 1
+	DB.Model(&user).Select("Name").Updates(&User{
+		Name: "test",
+	})
+}
+
+// 更新之前
+func (receiver *User) BeforeUpdate(tx *gorm.DB) (err error) {
+	fmt.Println("before update..")
+	return nil
+}
+
+func main() {
+	//createTable()
+	//insert()
+	//update1()
+	//update2()
+	//update3()
+	update4()
+}
+
+func init() {
+	dsn := "root:admin@tcp(127.0.0.1:3306)/golang_db?charset=utf8mb4&parseTime=True&loc=Local"
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info),
+	})
+	if err != nil {
+		log.Fatalln(err)
+	}
+	DB = db
+}
+```
+
+- #### 删除记录
+  - 删除一条记录时，删除对象需要指定主键，否则会触发 批量Delete
+```go
+package main
+
+import (
+	"fmt"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+	"log"
+	"time"
+)
+
+type User struct {
+	gorm.Model
+	Name     string
+	Age      int
+	Birthday time.Time
+	Active   bool
+}
+
+var DB *gorm.DB
+
+func createTable() {
+	DB.AutoMigrate(&User{})
+}
+
+func insert() {
+	user := User{
+		Name:     "test",
+		Age:      20,
+		Birthday: time.Now(),
+	}
+	DB.Create(&user)
+}
+
+func delete1() {
+	var user User
+	DB.First(&user)
+	DB.Delete(&user) // 软删除
+}
+
+func delete2() {
+	// 根据主键删除
+	var user User
+	DB.Delete(&user, 4)
+}
+
+func delete3() {
+	// 批量删除
+	var user User
+	DB.Where("1 = 1").Delete(&user)
+}
+
+// 删除之前
+func (receiver *User) BeforeDelete(tx *gorm.DB) (err error) {
+	fmt.Println("before delete...")
+	return nil
+}
+func main() {
+	insert()
+	//delete1()
+	//delete2()
+	delete3()
+}
+
+func init() {
+	dsn := "root:admin@tcp(127.0.0.1:3306)/golang_db?charset=utf8mb4&parseTime=True&loc=Local"
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info),
+	})
+	if err != nil {
+		log.Fatalln(err)
+	}
+	DB = db
+}
+```
