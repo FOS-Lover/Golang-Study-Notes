@@ -1,7 +1,7 @@
 # Golang Study Note
 
 - 采用 <a href="https://github.com/FOS-Lover/Golang-Study-Notes/blob/master/LICENSE">MIT</a> 协议
-- 更新于 : 2022年10月20日
+- 更新于 : 2022年10月25日
 - 不足地方或错误地方欢迎fork提交
 
 ### 常用命令
@@ -5253,5 +5253,493 @@ func init() {
 		log.Fatalln(err)
 	}
 	DB = db
+}
+```
+
+- #### 原生SQL和SQL构建器
+```go
+package main
+
+import (
+	"fmt"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+	"log"
+)
+
+var DB *gorm.DB
+
+func testRaw1() {
+	type Result struct {
+		ID   int
+		Name string
+		Age  int
+	}
+	var result Result
+	DB.Raw("select id, name, age from users where name = ?", "tom").Scan(&result)
+	fmt.Println(result)
+}
+
+func testExec1() {
+	DB.Exec("update users set age = ? where name = ?", 100, "tom")
+}
+
+func main() {
+	//testRaw1()
+	testExec1()
+}
+func init() {
+	dsn := "root:admin@tcp(127.0.0.1:3306)/golang_db?charset=utf8mb4&parseTime=True&loc=Local"
+	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info),
+	})
+	if err != nil {
+		log.Fatalln(err)
+	}
+	DB = db
+}
+```
+
+- #### 关联关系Belongs To(属于)
+  - `belong to` 会与另一个模型建立了一对一的连接。这种模型的每一个实例都“属于”另一个模型的实例
+```go
+package main
+
+import (
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+	"log"
+)
+
+var db *gorm.DB
+
+
+
+func test1()  {
+	// 默认一对一外键关联
+	type User struct {
+		gorm.Model
+		Name      string
+		CompanyID int
+		Company   Company
+	}
+	type Company struct {
+		ID   int
+		Name string
+	}
+	db.AutoMigrate(&Company{}, &User{})
+}
+
+func test2()  {
+	// 重写外键
+	type User struct {
+		gorm.Model
+		Name      string
+		CompanyRefer int
+		Company   Company `gorm:"foreignKey:CompanyRefer"`
+	}
+	type Company struct {
+		ID   int
+		Name string
+	}
+	db.AutoMigrate(&Company{}, &User{})
+}
+
+func main() {
+}
+func init() {
+	dsn := "root:admin@tcp(127.0.0.1:3306)/golang_db?charset=utf8mb4&parseTime=True&loc=Local"
+	DB, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info),
+	})
+	if err != nil {
+		log.Fatalln(err)
+	}
+	db = DB
+}
+```
+
+- #### 关联关系Has One (有一个)
+  - `has one` 与另一个模型建立一个一对一的关联，但它和一对一关系有些不同。这种关联表明一个模型的每一个实例都包含或拥有另一个模型的一个实例
+```go
+package main
+
+import (
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+	"log"
+)
+
+var db *gorm.DB
+
+func test1() {
+	type CreditCard struct {
+		gorm.Model
+		Number string
+		UserID uint
+	}
+	type User struct {
+		gorm.Model
+		CreditCard CreditCard
+	}
+	db.AutoMigrate(&User{}, &CreditCard{})
+}
+
+func test2() {
+	// 多态
+	type Toy struct {
+		ID        int
+		Name      string
+		OwnerID   int
+		OwnerType string
+	}
+	type Cat struct {
+		ID   int
+		Name string
+		Toy  Toy `gorm:"polymorphic:Owner;"`
+	}
+	type Dog struct {
+		ID   int
+		Name string
+		Toy  Toy `gorm:"polymorphic:Owner;"`
+	}
+	//db.AutoMigrate(&Toy{}, &Cat{}, &Dog{})
+	db.Create(&Dog{Name: "dog1", Toy: Toy{Name: "toy1"}})
+	db.Create(&Cat{Name: "cat1", Toy: Toy{Name: "toy2"}})
+}
+
+func main() {
+	//test1()
+	test2()
+}
+
+func init() {
+	dsn := "root:admin@tcp(127.0.0.1:3306)/golang_db?charset=utf8mb4&parseTime=True&loc=Local"
+	DB, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info),
+	})
+	if err != nil {
+		log.Fatalln(err)
+	}
+	db = DB
+}
+```
+
+- #### 关联关系Has Many
+  - `has many` 与另一个模型建立了一对多的连接。不同于`has one`，拥有者可以有零或多个关联模型
+```go
+package main
+
+import (
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+	"log"
+)
+
+var db *gorm.DB
+
+type User struct {
+	gorm.Model
+	CreditCard []CreditCard
+}
+type CreditCard struct {
+	gorm.Model
+	Number string
+	UserID uint
+}
+
+func createTable() {
+	db.AutoMigrate(&User{}, &CreditCard{})
+}
+
+func main() {
+	//createTable()
+}
+
+func init() {
+	dsn := "root:admin@tcp(127.0.0.1:3306)/golang_db?charset=utf8mb4&parseTime=True&loc=Local"
+	DB, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info),
+	})
+	if err != nil {
+		log.Fatalln(err)
+	}
+	db = DB
+}
+```
+
+- #### 关联关系Many to Many
+  - Many to Many 会在两个model中添加一张连接表
+```go
+package main
+
+import (
+  "gorm.io/driver/mysql"
+  "gorm.io/gorm"
+  "gorm.io/gorm/logger"
+  "log"
+)
+
+var db *gorm.DB
+
+type User struct {
+  gorm.Model
+  Languages []Language `gorm:"many2many:user_languages;"`
+}
+type Language struct {
+  gorm.Model
+  Name string
+}
+
+func createTable() {
+  db.AutoMigrate(&User{}, &Language{})
+}
+
+func insert() {
+  user := User{
+    Languages: []Language{{Name: "English"}, {Name: "Chinese"}},
+  }
+  db.Create(&user)
+}
+
+func main() {
+  //createTable()
+  insert()
+}
+
+func init() {
+  dsn := "root:admin@tcp(127.0.0.1:3306)/golang_db?charset=utf8mb4&parseTime=True&loc=Local"
+  DB, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
+    Logger: logger.Default.LogMode(logger.Info),
+  })
+  if err != nil {
+    log.Fatalln(err)
+  }
+  db = DB
+}
+```
+
+- #### 关联关系之实体关联
+```go
+package main
+
+import (
+	"fmt"
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+	"log"
+)
+
+var db *gorm.DB
+
+type Email struct {
+	gorm.Model
+	Email  string
+	UserID uint
+}
+
+// User 拥有并属于多种 Language，使用 `user_languages` 连接表
+type User struct {
+	gorm.Model
+	Name            string
+	BillingAddress  Address
+	ShippingAddress Address
+	Emails          []Email
+	Languages       []Language `gorm:"many2many:user_languages;"`
+}
+
+type Language struct {
+	gorm.Model
+	Name  string
+	Users []*User `gorm:"many2many:user_languages;"`
+}
+type Address struct {
+	gorm.Model
+	Address1 string
+	UserID   uint
+}
+
+func createTable() {
+	db.AutoMigrate(&User{}, &Email{}, &Address{}, &Language{})
+}
+
+func test1() {
+	user := User{
+		Name: "tom",
+		BillingAddress: Address{
+			Address1: "Billing - Address - Address - 1",
+		},
+		ShippingAddress: Address{
+			Address1: "Shipping - Address - Address - 1",
+		},
+		Emails: []Email{
+			{Email: "tom@tom.com"},
+			{Email: "tom2@tom.com"},
+		},
+		Languages: []Language{
+			{Name: "ZH"},
+			{Name: "EN"},
+		},
+	}
+	db.Session(&gorm.Session{FullSaveAssociations: true}).Updates(&user) // 更新关联的数据
+	//db.Create(&user)
+}
+
+func test2() {
+	// 关联查询
+	var user User
+	var languages []Language
+	db.First(&user)
+	db.Model(&user).Association("Languages").Find(&languages)
+	fmt.Println(languages)
+}
+
+func test3() {
+	// 计数
+	var user User
+	db.First(&user)
+	count := db.Model(&user).Association("Languages").Count()
+	fmt.Println(count)
+}
+
+func main() {
+	//createTable()
+	//test1()
+	//test2()
+	test3()
+}
+
+func init() {
+	dsn := "root:admin@tcp(127.0.0.1:3306)/golang_db?charset=utf8mb4&parseTime=True&loc=Local"
+	DB, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
+		Logger: logger.Default.LogMode(logger.Info),
+	})
+	if err != nil {
+		log.Fatalln(err)
+	}
+	db = DB
+}
+```
+
+- #### gorm 会话
+  - gorm提供了`Session`方法，这是一个`New Session Method`，它允许创建带配置的新建会话模式
+```go
+package main
+
+import (
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+	"log"
+)
+
+var db *gorm.DB
+
+func test1()  {
+	db.Session(&gorm.Session{	// 会话配置
+		DryRun: true,
+	})
+}
+
+func main() {
+	
+}
+
+func init() {
+	dsn := "root:admin@tcp(127.0.0.1:3306)/golang_db?charset=utf8mb4&parseTime=True&loc=Local"
+	DB, err := gorm.Open(mysql.Open(dsn), &gorm.Config{	// 全局配置
+		Logger: logger.Default.LogMode(logger.Info),
+		DryRun: true,
+	})
+	if err != nil {
+		log.Fatalln(err)
+	}
+	db = DB
+}
+```
+
+- #### gorm 事务控制
+```go
+package main
+
+import (
+	"gorm.io/driver/mysql"
+	"gorm.io/gorm"
+	"gorm.io/gorm/logger"
+	"log"
+)
+
+var db *gorm.DB
+
+func test1() {
+	// session级别的禁用事务
+	db.Session(&gorm.Session{SkipDefaultTransaction: true})
+}
+
+type User struct {
+	gorm.Model
+	Name string
+}
+
+func test2() {
+	// 测试事务操作 没有使用事务控制
+	user := User{
+		Name: "Tom",
+	}
+	db.Create(&user)
+	db.Create(nil)
+}
+
+func test3()  {
+	user := User{
+		Name: "Tom",
+	}
+	// 手动事务控制 
+	begin := db.Begin()
+	db.Create(&user)
+	err := db.Create(nil).Error
+	if err != nil {
+		begin.Rollback()
+	}else{
+		begin.Commit()
+	}
+}
+
+func test4()  {
+	user := User{
+		Name: "Tom",
+	}
+	db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&user).Error; err != nil{
+			return err
+		}
+		if err := tx.Create(nil).Error; err != nil{
+			return err
+		}
+		return nil
+	})
+}
+
+func main() {
+	//test2()
+	//test3()
+}
+
+func init() {
+	dsn := "root:admin@tcp(127.0.0.1:3306)/golang_db?charset=utf8mb4&parseTime=True&loc=Local"
+	DB, err := gorm.Open(mysql.Open(dsn), &gorm.Config{ // 全局配置
+		Logger:                 logger.Default.LogMode(logger.Info),
+		DryRun:                 true,
+		SkipDefaultTransaction: true, // 禁用全局事务
+	})
+	if err != nil {
+		log.Fatalln(err)
+	}
+	db = DB
 }
 ```

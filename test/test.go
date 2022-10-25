@@ -1,74 +1,77 @@
 package main
 
 import (
-	"fmt"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
 	"log"
-	"time"
 )
+
+var db *gorm.DB
+
+func test1() {
+	// session级别的禁用事务
+	db.Session(&gorm.Session{SkipDefaultTransaction: true})
+}
 
 type User struct {
 	gorm.Model
-	Name     string
-	Age      int
-	Birthday time.Time
-	Active   bool
+	Name string
 }
 
-var DB *gorm.DB
-
-func createTable() {
-	DB.AutoMigrate(&User{})
-}
-
-func insert() {
+func test2() {
+	// 测试事务操作 没有使用事务控制
 	user := User{
-		Name:     "test",
-		Age:      20,
-		Birthday: time.Now(),
+		Name: "Tom",
 	}
-	DB.Create(&user)
+	db.Create(&user)
+	db.Create(nil)
 }
 
-func delete1() {
-	var user User
-	DB.First(&user)
-	DB.Delete(&user) // 软删除
+func test3()  {
+	user := User{
+		Name: "Tom",
+	}
+	// 手动事务控制
+	begin := db.Begin()
+	db.Create(&user)
+	err := db.Create(nil).Error
+	if err != nil {
+		begin.Rollback()
+	}else{
+		begin.Commit()
+	}
 }
 
-func delete2() {
-	// 根据主键删除
-	var user User
-	DB.Delete(&user, 4)
+func test4()  {
+	user := User{
+		Name: "Tom",
+	}
+	db.Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&user).Error; err != nil{
+			return err
+		}
+		if err := tx.Create(nil).Error; err != nil{
+			return err
+		}
+		return nil
+	})
 }
 
-func delete3() {
-	// 批量删除
-	var user User
-	DB.Where("1 = 1").Delete(&user)
-}
-
-// 删除之前
-func (receiver *User) BeforeDelete(tx *gorm.DB) (err error) {
-	fmt.Println("before delete...")
-	return nil
-}
 func main() {
-	insert()
-	//delete1()
-	//delete2()
-	delete3()
+	//test2()
+	//test3()
 }
 
 func init() {
 	dsn := "root:admin@tcp(127.0.0.1:3306)/golang_db?charset=utf8mb4&parseTime=True&loc=Local"
-	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
-		Logger: logger.Default.LogMode(logger.Info),
+	DB, err := gorm.Open(mysql.Open(dsn), &gorm.Config{ // 全局配置
+		Logger:                 logger.Default.LogMode(logger.Info),
+		DryRun:                 true,
+		SkipDefaultTransaction: true, // 禁用全局事务
 	})
 	if err != nil {
 		log.Fatalln(err)
 	}
-	DB = db
+	db = DB
 }
